@@ -1,0 +1,20 @@
+x-common-config:
+  &common-config
+  network_mode: host
+  ipc: host 
+  pid: host
+  restart: unless-stopped
+  privileged: true
+
+services:
+  husarion_ugv_crsf_teleop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    <<:
+    - *common-config
+    environment:
+      - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+    devices:
+      - /dev/ttyUSB0

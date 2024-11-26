@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>husarion_ugv_crsf_teleop</name>
+  <version>1.0.0</version>
+  <description>Teleoperate robots using a CRSF compatible remote control</description>
+  <maintainer email="support@husarion.com">Husarion</maintainer>
+  <license>Apache License 2.0</license>
+
+  <url type="website">https://husarion.com/</url>
+  <url type="repository">https://github.com/husarion/husarion_ugv_crsf_teleop</url>
+  <url type="bugtracker">https://github.com/husarion/husarion_ugv_crsf_teleop/issues</url>
+
+  <author email="milosz.lagan@husarion.com">Milosz Lagan</author>
+
+  <depend>python3-serial</depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>husarion_ugv_crsf_interfaces</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
