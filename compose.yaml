@@ -1,7 +1,7 @@
 x-common-config:
   &common-config
   network_mode: host
-  ipc: host 
+  ipc: host
   pid: host
   restart: unless-stopped
   privileged: true

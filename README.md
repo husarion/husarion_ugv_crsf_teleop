@@ -1,6 +1,6 @@
 # husarion_ugv_crsf_teleop
 
-This ROS 2 package allows you to control robots using a CRSF compatible remote control. Receiver should be connected to the robot's computer via USB-UART converter or be integrated as a hardware USB dongle. CRSF protocol parser is implemented based on the following [specification](https://github.com/crsf-wg/crsf/wiki).
+This ROS 2 package allows you to control robots using a CRSF compatible remote control. A receiver should be connected to the robot's computer via USB-UART converter or be integrated as a hardware USB dongle. The CRSF protocol parser is implemented based on the following [specification](https://github.com/crsf-wg/crsf/wiki).
 
 ## Launch Files
 
@@ -8,7 +8,7 @@ This ROS 2 package allows you to control robots using a CRSF compatible remote c
 
 ## Configuration Files
 
-- [`crsf_teleop.yaml`](./config/crsf_teleop.yaml): Sets default parameter values for the `teleop.launch.py` launch file.
+- [`crsf_teleop.yaml`](./config/crsf_teleop.yaml): Sets default parameter values for the crsf_teleop_node when `teleop.launch.py` is launched.
 
 ## ROS Nodes
 
@@ -25,8 +25,8 @@ The following channels are used for controlling the robot via the TX16S remote c
 
 #### Publishes
 
-- `/cmd_vel` [*geometry_msgs/Twist*]: Publishes velocity commands to the robot.
-- `/link_status` [*panther_crsf_teleop_msgs/LinkStatus*]: Describes radio link status between the remote control and the robot. Parameters are described in the [CRSF_FRAMETYPE_LINK_STATISTICS frame documentation](https://github.com/crsf-wg/crsf/wiki/CRSF_FRAMETYPE_LINK_STATISTICS).
+- `cmd_vel` [*geometry_msgs/Twist*]: Publishes velocity commands to the robot.
+- `link_status` [*panther_crsf_teleop_msgs/LinkStatus*]: Describes radio link status between the remote control and the robot. Parameters are described in the [CRSF_FRAMETYPE_LINK_STATISTICS frame documentation](https://github.com/crsf-wg/crsf/wiki/CRSF_FRAMETYPE_LINK_STATISTICS).
 
 #### Service Clients
 
