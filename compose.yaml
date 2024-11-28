@@ -8,9 +8,7 @@ x-common-config:
 
 services:
   husarion_ugv_crsf_teleop:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: husarion/crsf-teleop:humble
     <<:
     - *common-config
     environment:
