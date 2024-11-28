@@ -24,8 +24,13 @@ from std_srvs.srv import Trigger
 
 from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
-from .crsf.message import CRSFMessage, PacketType
-from .crsf.parser import CRSFParser, normalize_channel_values, unpack_channels
+from .crsf.message import (
+    CRSFMessage,
+    PacketType,
+    normalize_channel_values,
+    unpack_channels,
+)
+from .crsf.parser import CRSFParser
 
 REQUESTED_E_STOP_THRESHOLD = 0.5
 SEND_CMD_VEL_THRESHOLD = -0.5
@@ -79,13 +84,13 @@ class CRSFInterface(Node):
 
         self.link_status = LinkStatus()
 
-        self.declare_parameters()
+        self.declare_node_parameters()
 
         [
             port,
             baud,
             e_stop_republish,
-            self.silence_cmd_vel,
+            self.enable_cmd_vel_silence_switch,
             self.linear_speed_presets,
             self.angular_speed_presets,
         ] = self.get_parameters(
@@ -99,10 +104,10 @@ class CRSFInterface(Node):
             ]
         )
 
-        if len(self.linear_speed_presets) != 3 or len(self.angular_speed_presets) != 3:
+        if len(self.linear_speed_presets.value) != 3 or len(self.angular_speed_presets.value) != 3:
             raise ValueError("Speed presets must be a list of 3 values")
 
-        self.serial = serial.Serial(port, baud, timeout=2)
+        self.serial = serial.Serial(port.value, baud.value, timeout=2)
 
         self.parser = CRSFParser()
         self.parser.on_message = lambda msg: self.handle_message(msg)
@@ -110,10 +115,10 @@ class CRSFInterface(Node):
         self.serial_parser_timer = self.create_timer(0.01, self.serial_parser_timer_cb)
 
         self.rc_estop_state = True
-        if e_stop_republish:
+        if e_stop_republish.value:
             self.e_stop_republisher = self.create_timer(1, self.update_e_stop)
 
-    def declare_parameters(self):
+    def declare_node_parameters(self):
         self.declare_parameter(
             "port", "/dev/ttyUSB0", ParameterDescriptor(description="CRSF receiver serial port")
         )
@@ -172,11 +177,18 @@ class CRSFInterface(Node):
                     self.e_stop_reset.call_async(Trigger.Request())
 
             # Disable sending cmd_vel if override switch is asserted
-            send_cmd_vel = channels[Switch.SA] < SEND_CMD_VEL_THRESHOLD
+            if self.enable_cmd_vel_silence_switch.value:
+                send_cmd_vel = channels[Switch.SA] < SEND_CMD_VEL_THRESHOLD
+            else:
+                send_cmd_vel = True
 
-            if send_cmd_vel and not self.silence_cmd_vel:
-                linear_speed_modifier = self.linear_speed_presets[round(channels[Switch.SG]) + 1]
-                angular_speed_modifier = self.angular_speed_presets[round(channels[Switch.SG]) + 1]
+            if send_cmd_vel:
+                linear_speed_modifier = self.linear_speed_presets.value[
+                    round(channels[Switch.SG]) + 1
+                ]
+                angular_speed_modifier = self.angular_speed_presets.value[
+                    round(channels[Switch.SG]) + 1
+                ]
 
                 t = Twist()
                 t.linear.x = channels[Switch.RIGHT_HORIZONTAL] * linear_speed_modifier
