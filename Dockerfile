@@ -1,6 +1,8 @@
 ARG ROS_DISTRO=humble
 FROM husarnet/ros:${ROS_DISTRO}-ros-core
 
+SHELL ["/bin/bash", "-c"]
+
 WORKDIR /ros2_ws
 
 COPY . src/husarion_ugv_crsf_teleop
