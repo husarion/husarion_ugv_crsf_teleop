@@ -1,18 +1,17 @@
-x-common-config:
-  &common-config
-  network_mode: host
-  ipc: host
-  pid: host
-  restart: unless-stopped
-  privileged: true
-
 services:
   husarion_ugv_crsf_teleop:
     image: husarion/crsf-teleop:humble
-    <<:
-    - *common-config
+    network_mode: host
+    ipc: host
+    pid: host
+    restart: unless-stopped
+    privileged: true
     environment:
       - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - ROBOT_NAMESPACE=panther
     devices:
-      - /dev/ttyUSB0
+      - /dev/ttyUSBPAD
+    command: >
+      ros2 launch husarion_ugv_crsf_teleop teleop.launch.py
+      port:=/dev/ttyUSBPAD namespace:=$${ROBOT_NAMESPACE}
