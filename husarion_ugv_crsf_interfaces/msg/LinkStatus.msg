@@ -1,0 +1,10 @@
+int16 rssi_1
+int16 rssi_2
+uint8 lq
+int8 uplink_snr
+uint8 used_antenna
+uint8 mode
+uint8 tx_power
+int16 downlink_rssi
+uint8 downlink_lq
+int8 downlink_snr
