@@ -74,7 +74,7 @@ class CRSFParser:
     # To allow iterative parsing input data buffer first element/s should
     # only be discarded if the result is PACKET_VALID or PACKET_INVALID.
     # IN_PROGRESS indicates that the byte was read and parsed but the
-    # message parsing could fail in te future.
+    # message parsing could fail in the future.
     def parse_byte(self, byte: int) -> Tuple[Result, int]:
         INVALID_DISCARD_BYTE = (self.Result.PACKET_INVALID, 1)
         IN_PROGRESS = (self.Result.IN_PROGRESS, 1)
