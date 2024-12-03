@@ -19,14 +19,15 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import (
     EnvironmentVariable,
     LaunchConfiguration,
-    PathJoinSubstitution
+    PathJoinSubstitution,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+
 def generate_launch_description():
     husarion_ugv_crsf_teleop_dir = FindPackageShare("husarion_ugv_crsf_teleop")
-    
+
     namespace = LaunchConfiguration("namespace")
     declare_namespace_arg = DeclareLaunchArgument(
         "namespace",
