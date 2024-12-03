@@ -49,4 +49,4 @@ jobs:
           file: ./Dockerfile
           platforms: linux/arm64, linux/amd64
           push: true
-          tags: husarion/crsf-teleop:${{ github.event.inputs.tag }}
+          tags: husarion/crsf-teleop:${{ github.event.inputs.tag || 'humble' }}
