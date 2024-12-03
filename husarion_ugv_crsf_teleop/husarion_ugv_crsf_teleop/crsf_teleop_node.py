@@ -199,6 +199,8 @@ class CRSFInterface(Node):
         elif msg.msg_type == PacketType.LINK_STATISTICS:
             last_lq = self.link_status.lq
 
+            self.link_status.header.stamp = self.get_clock().now().to_msg()
+
             self.link_status.rssi_1 = -msg.payload[0]
             self.link_status.rssi_2 = -msg.payload[1]
             self.link_status.lq = msg.payload[2]
