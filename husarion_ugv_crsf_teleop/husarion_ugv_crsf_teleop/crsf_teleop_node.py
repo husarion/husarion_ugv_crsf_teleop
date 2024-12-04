@@ -38,6 +38,8 @@ SEND_CMD_VEL_THRESHOLD = -0.5
 LINK_QUALITY_VERY_LOW_THRESHOLD = 15
 LINK_QUALITY_LOW_THRESHOLD = 30
 
+PAD_DEADZONE = 0.02
+
 
 # RC remote to channel id mapping
 class Switch(IntEnum):
@@ -193,6 +195,11 @@ class CRSFInterface(Node):
                 t = Twist()
                 t.linear.x = channels[Switch.RIGHT_HORIZONTAL] * linear_speed_modifier
                 t.angular.z = -channels[Switch.LEFT_VERTICAL] * angular_speed_modifier
+
+                if abs(t.linear.x) < PAD_DEADZONE:
+                    t.linear.x = 0
+                if abs(t.angular.z) < PAD_DEADZONE:
+                    t.angular.z = 0
 
                 self.cmd_vel_publisher.publish(t)
 
