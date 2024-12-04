@@ -197,9 +197,9 @@ class CRSFInterface(Node):
                 t.angular.z = -channels[Switch.LEFT_VERTICAL] * angular_speed_modifier
 
                 if abs(t.linear.x) < PAD_DEADZONE:
-                    t.linear.x = 0
+                    t.linear.x = 0.0
                 if abs(t.angular.z) < PAD_DEADZONE:
-                    t.angular.z = 0
+                    t.angular.z = 0.0
 
                 self.cmd_vel_publisher.publish(t)
 
