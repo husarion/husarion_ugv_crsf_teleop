@@ -8,7 +8,7 @@ This ROS 2 package allows you to control robots using a CRSF compatible remote c
 
 ## Configuration Files
 
-- [`crsf_teleop.yaml`](./config/crsf_teleop.yaml): Sets default parameter values for the crsf_teleop_node when `teleop.launch.py` is launched.
+- [`crsf_teleop.yaml`](./husarion_ugv_crsf_teleop/config/crsf_teleop.yaml): Sets default parameter values for the crsf_teleop_node when `teleop.launch.py` is launched.
 
 ## ROS Nodes
 

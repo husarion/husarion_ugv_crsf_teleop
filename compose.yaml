@@ -11,6 +11,6 @@ services:
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
     volumes:
       - /dev:/dev
-      - ./config/crsf_teleop.yaml:/ros2_ws/install/husarion_ugv_crsf_teleop/share/husarion_ugv_crsf_teleop/config/crsf_teleop.yaml
+      - ./config/crsf_teleop_panther.yaml:/ros2_ws/install/husarion_ugv_crsf_teleop/share/husarion_ugv_crsf_teleop/config/crsf_teleop.yaml
     command: >
       ros2 launch husarion_ugv_crsf_teleop teleop.launch.py namespace:=panther
