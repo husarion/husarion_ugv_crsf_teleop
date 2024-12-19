@@ -5,5 +5,5 @@
       baud: 576000
       e_stop_republish: false
       enable_cmd_vel_silence_switch: false
-      linear_speed_presets: [0.5, 1.0, 2.0]
-      angular_speed_presets: [0.5, 1.0, 2.0]
+      linear_speed_presets: [0.4, 1.2, 2.0]
+      angular_speed_presets: [0.39, 0.78, 1.88]

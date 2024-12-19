@@ -4,11 +4,12 @@ This ROS 2 package allows you to control robots using a CRSF compatible remote c
 
 ## Launch Files
 
-- `teleop.launch.py`: Launches crsf_teleop_node node. Automatically respawns node if it exits. Node's namespace can be set using the `namespace` launch argument.
+- `teleop.launch.py`: Launches crsf_teleop_node node. Automatically respawns node if it exits. Node's namespace can be set using the `namespace` launch argument. Custom parameters file can be provided by setting the `params_file` launch argument.
 
 ## Configuration Files
 
-- [`crsf_teleop.yaml`](./config/crsf_teleop.yaml): Sets default parameter values for the crsf_teleop_node when `teleop.launch.py` is launched.
+- [`crsf_teleop_panther.yaml`](./husarion_ugv_crsf_teleop/config/crsf_teleop_panther.yaml): Sets default Panther robot parameter values for the crsf_teleop_node when `teleop.launch.py` is launched.
+- [`crsf_teleop_lynx.yaml`](./husarion_ugv_crsf_teleop/config/crsf_teleop_lynx.yaml): Sets default Lynx robot parameter values for the crsf_teleop_node when `teleop.launch.py` is launched.
 
 ## ROS Nodes
 
