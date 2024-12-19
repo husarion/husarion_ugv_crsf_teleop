@@ -25,8 +25,7 @@ setup(
     packages=find_packages(exclude=["test"]),
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
-        (os.path.join("share", package_name, "config"), ["config/crsf_teleop_panther.yaml"]),
-        (os.path.join("share", package_name, "config"), ["config/crsf_teleop_lynx.yaml"]),
+        (os.path.join("share", package_name, "config"), glob(os.path.join("config", "*.yaml"))),
         (os.path.join("share", package_name), ["package.xml"]),
         (
             os.path.join("share", package_name, "launch"),
