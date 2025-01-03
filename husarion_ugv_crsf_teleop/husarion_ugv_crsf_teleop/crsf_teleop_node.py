@@ -109,7 +109,13 @@ class CRSFInterface(Node):
         if len(self.linear_speed_presets.value) != 3 or len(self.angular_speed_presets.value) != 3:
             raise ValueError("Speed presets must be a list of 3 values")
 
-        self.serial = serial.Serial(port.value, baud.value, timeout=2)
+        self.serial = None
+        while self.serial is None:
+            try:
+                self.serial = serial.Serial(port.value, baud.value, timeout=2)
+            except serial.SerialException as e:
+                self.get_logger().error(f"Failed to open serial port: {e}")
+                rclpy.spin_once(self, timeout_sec=2)
 
         self.parser = CRSFParser()
         self.parser.on_message = lambda msg: self.handle_message(msg)
