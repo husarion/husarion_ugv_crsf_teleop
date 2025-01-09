@@ -10,7 +10,8 @@ services:
       - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
       - ROBOT_MODEL_NAME=${ROBOT_MODEL_NAME:-panther}
+      - ROBOT_NAMESPACE=${ROBOT_NAMESPACE:-panther}
     volumes:
       - /dev:/dev
     command: >
-      ros2 launch husarion_ugv_crsf_teleop teleop.launch.py namespace:=panther
+      ros2 launch husarion_ugv_crsf_teleop teleop.launch.py
