@@ -2,8 +2,6 @@
 
 ## Getting started
 
-This ROS 2 package allows you to control robots using a CRSF compatible remote control. A receiver should be connected to the robot's computer via USB-UART converter or be integrated as a hardware USB dongle. The CRSF protocol parser is implemented based on the following [specification](https://github.com/crsf-wg/crsf/wiki).
-
 To run the RadioMaster TX16S, you must meet certain requirements listed below:
 
 ### Software

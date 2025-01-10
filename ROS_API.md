@@ -6,7 +6,7 @@ Contains custom message definitions for the `husarion_ugv_crsf_teleop` node. Cur
 
 ## `husarion_ugv_crsf_teleop`
 
-Main package for the CRSF teleoperation node. Allows for controlling the robot using a RadioMaster TX16S remote control.
+Main package for controlling robots using a CRSF compatible remote control. A receiver should be connected to the robot's computer via USB-UART converter or be integrated as a hardware USB dongle. The CRSF protocol parser is implemented based on the following [specification](https://github.com/crsf-wg/crsf/wiki).
 
 ### Launch Files
 
@@ -14,9 +14,9 @@ Main package for the CRSF teleoperation node. Allows for controlling the robot u
 
 #### Parameters
 
-- `namespace` [*string*, default: **""**]: Namespace for the node.
-- `params_file` [*string*, default: **"config/crsf_teleop_${ROBOT_MODEL}.yaml"**]: Path to the `crsf_teleop_node` parameters file.
-- `robot_model` [*string*, default: **"${ROBOT_MODEL_NAME}"**]: Husarion robot model. If not provided, the model is deduced from the environment variables. Available options are **panther** and **lynx**.
+- `namespace` [*string*, default: **`""`**]: Namespace for the node.
+- `params_file` [*string*, default: **`config/crsf_teleop_${ROBOT_MODEL}.yaml`**]: Path to the `crsf_teleop_node` parameters file.
+- `robot_model` [*string*, default: **`${ROBOT_MODEL_NAME}`**]: Husarion robot model. If not provided, the model is deduced from the environment variables. Available options are **panther** and **lynx**.
 
 ### Configuration Files
 
