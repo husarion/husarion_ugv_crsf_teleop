@@ -51,7 +51,7 @@ sudo udevadm trigger
 
 #### 2. Test receiver dongle
 
-Connect receiver dongle to the USB port of your robot. You can verify that the device is detected by typing:
+Connect receiver dongle to the USB port of the User Computer. You can verify that the device is detected by typing:
 
 ```bash
 ls /dev | grep "ttyUSBPAD"
@@ -122,7 +122,7 @@ After a successful connection to the RC remote, you should see the following mes
 Now you should see the relevant ROS 2 topic:
 
 ```bash
-user@hostname:~$ ros2 topic list
+user@docker:~$ ros2 topic list
 /panther/cmd_vel
 /panther/link_status
 /parameter_events

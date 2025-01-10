@@ -10,7 +10,7 @@ Main package for controlling robots using a CRSF compatible remote control. A re
 
 ### Launch Files
 
-- `teleop.launch.py`: Launches crsf_teleop_node node. Automatically respawns node if it exits. Node's namespace can be set using the `namespace` launch argument. Custom parameters file can be provided by setting the `params_file` launch argument.
+- `teleop.launch.py`: Launches crsf_teleop_node node. Automatically respawns node if a remote controller is connected. A namespace of a node can be set using the `namespace` launch argument. A custom parameters file can be provided by setting the `params_file` launch argument.
 
 #### Parameters
 
