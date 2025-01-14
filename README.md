@@ -7,7 +7,7 @@ To run the RadioMaster TX16S, you must meet certain requirements listed below:
 ### Software
 
 - [**Docker Engine and Docker Compose**](https://docs.docker.com/engine/install/).
-- Device with Linux based OS (e.g. robot, laptop) and [ROS 2 Humble](https://docs.ros.org/en/humble/Installation.html) installed.
+- Device with Linux based OS (e.g. robot, laptop).
 
 ### Hardware
 
@@ -36,7 +36,7 @@ sudo nano /etc/udev/rules.d/99-local.rules
 
 Append the following line to the file:
 
-```udev
+```
 ACTION=="add", ,ATTRS{interface}=="PAD02 Dongle", SYMLINK+="ttyUSBPAD"
 ```
 
@@ -59,10 +59,11 @@ ls /dev | grep "ttyUSBPAD"
 
 You should see a file named `ttyUSBPAD` in the output.
 
-#### 3. Get a Docker Compose file from the repository
+#### 3. Clone repository
 
 ```bash
-curl -O https://raw.githubusercontent.com/husarion/husarion_ugv_crsf_teleop/refs/heads/master/compose.yaml
+git clone https://github.com/husarion/husarion_ugv_crsf_teleop.git
+cd husarion_ugv_crsf_teleop
 ```
 
 #### 4. (Optional) Edit Parameters File
@@ -72,16 +73,16 @@ curl -O https://raw.githubusercontent.com/husarion/husarion_ugv_crsf_teleop/refs
 
 If you want to change the default parameters, you can do so by providing a parameters file. Detailed information about the parameters can be found in the ROS API.
 
-Get a reference file from the repository for Panther:
+Get a reference file from for Panther:
 
 ```bash
-curl -o params.yaml https://raw.githubusercontent.com/husarion/husarion_ugv_crsf_teleop/refs/heads/master/husarion_ugv_crsf_teleop/config/crsf_teleop_panther.yaml
+cp husarion_ugv_crsf_teleop/config/crsf_teleop_panther.yaml params.yaml
 ```
 
 Or for Lynx:
 
 ```bash
-curl -o params.yaml https://raw.githubusercontent.com/husarion/husarion_ugv_crsf_teleop/refs/heads/master/husarion_ugv_crsf_teleop/config/crsf_teleop_lynx.yaml
+cp husarion_ugv_crsf_teleop/config/crsf_teleop_lynx.yaml params.yaml
 ```
 
 In the `compose.yaml` file, pass `params.yaml` under `volumes` section:
@@ -98,6 +99,8 @@ And add parameter file as launch argument:
     command: ros2 launch husarion_ugv_crsf_teleop crsf_teleop.launch.py params_file:=/params.yaml
 ```
 
+Edit entries in the `params.yaml` file to change the default parameters.
+
 #### 5. Start Docker service
 
 ```bash
@@ -112,12 +115,18 @@ docker compose logs -f
 
 After a successful connection to the RC remote, you should see the following message:
 
-```ros
+```
 [panther.crsf_teleop]: Connected
 [panther.crsf_teleop]: Link quality restored: 100%
 ```
 
 ### Result
+
+Exec into running container:
+
+```bash
+docker compose exec -it husarion_ugv_crsf_teleop /bin/bash
+```
 
 Now you should see the relevant ROS 2 topic:
 
