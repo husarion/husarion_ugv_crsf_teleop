@@ -6,7 +6,7 @@ Contains custom message definitions for the `husarion_ugv_crsf_teleop` node. Cur
 
 ## `husarion_ugv_crsf_teleop`
 
-Main package for controlling robots using a CRSF compatible remote control. A receiver should be connected to the robot's computer via USB-UART converter or be integrated as a hardware USB dongle. The CRSF protocol parser is implemented based on the following [specification](https://github.com/crsf-wg/crsf/wiki).
+The main package for controlling robots using a CRSF compatible remote control. A receiver should be connected to the robot's computer via USB-UART converter or be integrated as a hardware USB dongle. The CRSF protocol parser is implemented based on the following [specification](https://github.com/crsf-wg/crsf/wiki).
 
 ### Launch Files
 
@@ -40,7 +40,7 @@ The following channels are used for controlling the robot via the TX16S remote c
 ##### Publishes
 
 - `cmd_vel` [*geometry_msgs/Twist*]: Publishes velocity commands to the robot.
-- `link_status` [*panther_crsf_teleop_msgs/LinkStatus*]: Describes radio link status between the remote control and the robot. Parameters are described in the [CRSF_FRAMETYPE_LINK_STATISTICS frame documentation](https://github.com/crsf-wg/crsf/wiki/CRSF_FRAMETYPE_LINK_STATISTICS).
+- `link_status` [*panther_crsf_teleop_msgs/LinkStatus*]: Describes a radio link status between the remote control and the robot. Parameters are described in the [CRSF_FRAMETYPE_LINK_STATISTICS frame documentation](https://github.com/crsf-wg/crsf/wiki/CRSF_FRAMETYPE_LINK_STATISTICS).
 
 ##### Service Clients
 
