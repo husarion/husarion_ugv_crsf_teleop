@@ -45,7 +45,7 @@ The following channels are used for controlling the robot via the TX16S remote c
 ##### Service Clients
 
 - `hardware/e_stop_trigger` [*std_srvs/Trigger*]: Triggers an emergency stop.
-- `hardware/e_stop_reset` [*std_srvs/Trigger*]: Triggers an emergency stop reset.
+- `hardware/e_stop_reset` [*std_srvs/Trigger*]: Resets an emergency stop.
 
 ##### Parameters
 
