@@ -9,9 +9,9 @@ services:
     environment:
       - RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
       - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
-      - ROBOT_MODEL_NAME=${ROBOT_MODEL_NAME:-panther}
       - ROBOT_NAMESPACE=${ROBOT_NAMESPACE:-panther}
     volumes:
       - /dev:/dev
+      - husarion_ugv_crsf_teleop/config:/config
     command: >
-      ros2 launch husarion_ugv_crsf_teleop teleop.launch.py
+      ros2 launch husarion_ugv_crsf_teleop teleop.launch.py params_file:=/config/crsf_teleop_panther.yaml

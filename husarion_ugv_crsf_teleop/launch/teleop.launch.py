@@ -20,7 +20,6 @@ from launch.substitutions import (
     EnvironmentVariable,
     LaunchConfiguration,
     PathJoinSubstitution,
-    PythonExpression,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -29,14 +28,6 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     husarion_ugv_crsf_teleop_dir = FindPackageShare("husarion_ugv_crsf_teleop")
 
-    robot_model = LaunchConfiguration("robot_model")
-    declare_robot_model_arg = DeclareLaunchArgument(
-        "robot_model",
-        default_value=EnvironmentVariable(name="ROBOT_MODEL_NAME", default_value="panther"),
-        description="Specify robot model.",
-        choices=["lynx", "panther"],
-    )
-
     params_file = LaunchConfiguration("params_file")
     declare_params_file_arg = DeclareLaunchArgument(
         "params_file",
@@ -44,7 +35,7 @@ def generate_launch_description():
             [
                 husarion_ugv_crsf_teleop_dir,
                 "config",
-                PythonExpression(["'crsf_teleop_", robot_model, ".yaml'"]),
+                "crsf_teleop_panther.yaml",
             ]
         ),
         description="Path to the ROS2 parameters file to use for the launched node.",
@@ -69,7 +60,6 @@ def generate_launch_description():
     )
 
     actions = [
-        declare_robot_model_arg,
         declare_params_file_arg,
         declare_namespace_arg,
         husarion_ugv_crsf_teleop_node,

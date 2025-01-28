@@ -66,40 +66,17 @@ git clone https://github.com/husarion/husarion_ugv_crsf_teleop.git
 cd husarion_ugv_crsf_teleop
 ```
 
-#### 4. (Optional) Edit Parameters File
+#### 4. Edit Parameters File
 
-> [!NOTE]
-> When using default settings there is no need to add or edit parameters file as the model of your Husarion robot is deduced automatically from environment variables.
-
-If you want to change the default parameters, you can do so by providing a parameters file. Detailed information about the parameters can be found in the ROS API.
-
-Get a reference file from for Panther:
-
-```bash
-cp husarion_ugv_crsf_teleop/config/crsf_teleop_panther.yaml params.yaml
-```
-
-Or for Lynx:
-
-```bash
-cp husarion_ugv_crsf_teleop/config/crsf_teleop_lynx.yaml params.yaml
-```
-
-In the `compose.yaml` file, pass `params.yaml` under `volumes` section:
+By default the node is set up to work with Panther robot. To load Lynx configuration, you need to change the `params_file` parameter in the `docker-compose.yml` file.
 
 ```yaml
-    volumes:
-      - /dev:/dev
-      - ./params.yaml:/params.yaml
+command: >
+      ros2 launch husarion_ugv_crsf_teleop teleop.launch.py params_file:=/config/crsf_teleop_lynx.yaml
 ```
 
-And add parameter file as launch argument:
-
-```yaml
-    command: ros2 launch husarion_ugv_crsf_teleop crsf_teleop.launch.py params_file:=/params.yaml
-```
-
-Edit entries in the `params.yaml` file to change the default parameters.
+Default parameter files for Panther and Lynx can be found in the `husarion_ugv_crsf_teleop/config` directory and can be changed directly.
+Custom parameters file can be provided by setting the `params_file` launch argument.
 
 #### 5. Start Docker service
 

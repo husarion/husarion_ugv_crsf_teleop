@@ -16,7 +16,6 @@ The main package for controlling robots using a CRSF compatible remote control. 
 
 - `namespace` [*string*, default: **`""`**]: Namespace for the node.
 - `params_file` [*string*, default: **`config/crsf_teleop_${ROBOT_MODEL}.yaml`**]: Path to the `crsf_teleop_node` parameters file.
-- `robot_model` [*string*, default: **`${ROBOT_MODEL_NAME}`**]: Husarion robot model. If not provided, the model is deduced from the environment variables. Available options are **panther** and **lynx**.
 
 ### Configuration Files
 
