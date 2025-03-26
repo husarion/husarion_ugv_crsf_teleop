@@ -16,8 +16,7 @@ from enum import IntEnum
 
 import rclpy
 import serial
-from geometry_msgs.msg import Twist
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import Twist, TwistStamped
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
