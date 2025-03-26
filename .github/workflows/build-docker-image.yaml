@@ -1,52 +1,63 @@
 ---
-name: Build/Publish Docker Image
+name: Build/Publish ROS Docker Image
 
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
     inputs:
-      tag:
-        description: tag that the image will be built with
+      build_type:
+        description: Is it a "development" or a "stable" release?
         required: true
+        type: choice
+        default: development
+        options:
+          - development
+          - stable
+      target_distro:
+        description: In case of "stable" release specify the ROS distro of the existing docker image (eg.
+          humble)
+        type: string
         default: humble
-      branch:
-        description: branch that will be used to build image
-        required: true
-        default: master
+      target_release:
+        description: In case of "stable" release specify the version of the existing docker image (eg.
+          1.0.12)
+        type: string
+        default: 0.0.0
+      target_date:
+        description: In case of "stable" release specify the date of the existing docker image in format
+          YYYYMMDD (eg. 20220124)
+        type: string
+        default: '20131206'
+  repository_dispatch:
+    types: [rebuild]
+  pull_request:
+    types:
+      - closed
+      - opened
 
 jobs:
-  build_ros:
+  build:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [humble, jazzy]
 
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v1
-        with:
-          ref: ${{ github.event.inputs.branch }}
+        uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Build Docker Image
+        uses: husarion-ci/ros-docker-img-action@v0.8
         with:
-          version: latest
-
-      - name: Login to Docker Registry
-        uses: docker/login-action@v1
-        with:
-          registry: docker.io
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push crsf_teleop image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/arm64, linux/amd64
-          push: true
-          tags: husarion/crsf-teleop:${{ github.event.inputs.tag || 'humble' }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+          main_branch_name: master
+          repo_name: crsf-teleop
+          build_type: ${{ inputs.build_type }}
+          ros_distro: ${{ matrix.ros_distro }}
+          platforms: linux/amd64, linux/arm64
+          # variables important only for stable release
+          target_distro: ${{ inputs.target_distro }}
+          target_release: ${{ inputs.target_release }}
+          target_date: ${{ inputs.target_date }}
