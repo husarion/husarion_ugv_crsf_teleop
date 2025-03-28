@@ -36,7 +36,7 @@ sudo nano /etc/udev/rules.d/99-local.rules
 
 Append the following line to the file:
 
-```
+```bash
 ACTION=="add", ,ATTRS{interface}=="PAD02 Dongle", SYMLINK+="ttyUSBPAD"
 ```
 
@@ -92,7 +92,7 @@ docker compose logs -f
 
 After a successful connection to the RC remote, you should see the following message:
 
-```
+```bash
 [panther.crsf_teleop]: Connected
 [panther.crsf_teleop]: Link quality restored: 100%
 ```
@@ -122,6 +122,7 @@ ros2 topic echo /<namespace>/cmd_vel
 ```
 
 Additionally, you can check the link status by echoing the `/link_status` topic:
+
 ```bash
 ros2 topic echo /<namespace>/link_status
 ```
@@ -143,3 +144,25 @@ RC controller has some additional buttons that can be used for different functio
 > ```yaml
 > silence_cmd_vel: true
 > ```
+
+## ROS node API
+
+### Publishes
+
+- `cmd_vel` [*geometry_msgs/Twist* or *geometry_msgs/TwistStamped*]: Command velocity, the type of the message depends on `cmd_vel_stamped` parameter.
+- `link_status` [*husarion_ugv_crsf_interfaces/LinkStatus*]: CRSF link status.
+
+### Service clients
+
+- `hardware/e_stop_trigger` [*std_srvs/Trigger]: Trigger robot emergency stop.
+- `hardware/e_stop_release` [*std_srvs/Trigger]: Release robot emergency stop.
+
+### Parameters
+
+- `port` [*string*, default: **/dev/ttyUSB0**]: CRSF receiver serial port".
+- `baud` [*int*, default: **576000**]: CRSF receiver baud rate".
+- `cmd_vel_stamped` [*bool*, default: **False**]: Publish cmd_vel as TwistStamped instead of Twist.
+- `e_stop_republish` [*bool*, default: **False**]:  Rebroadcast asserted e-stop signal once per second
+- `enable_cmd_vel_silence_switch` [*bool*, default: **False**]: Enable cmd_vel silence switch allowing other nodes to take control.
+- `linear_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum linear speed for cmd_vel in value range <0.0, 10.0>.
+- `angular_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum angular speed for cmd_vel in value range <0.0, 10.0>.
