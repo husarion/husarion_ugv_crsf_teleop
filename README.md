@@ -164,5 +164,5 @@ RC controller has some additional buttons that can be used for different functio
 - `cmd_vel_stamped` [*bool*, default: **False**]: Publish cmd_vel as TwistStamped instead of Twist.
 - `e_stop_republish` [*bool*, default: **False**]:  Rebroadcast asserted e-stop signal once per second
 - `enable_cmd_vel_silence_switch` [*bool*, default: **False**]: Enable cmd_vel silence switch allowing other nodes to take control.
-- `linear_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum linear speed for cmd_vel in value range <0.0, 10.0>.
-- `angular_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum angular speed for cmd_vel in value range <0.0, 10.0>.
+- `linear_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum linear speed for cmd_vel in value range from 0.0 to 10.0.
+- `angular_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum angular speed for cmd_vel in value range from 0.0 to 10.0.
