@@ -7,7 +7,6 @@ WORKDIR /ros2_ws
 
 COPY . src/husarion_ugv_crsf_teleop
 RUN apt-get update --fix-missing && \
-    apt upgrade -y && \
     apt-get install -y ros-dev-tools && \
     rm -rf /etc/ros/rosdep/sources.list.d/20-default.list && \
     rosdep init && \
