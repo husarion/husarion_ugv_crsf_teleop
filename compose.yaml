@@ -12,6 +12,6 @@ services:
       - ROBOT_NAMESPACE=${ROBOT_NAMESPACE:-panther}
     volumes:
       - /dev:/dev
-      - husarion_ugv_crsf_teleop/config:/config
+      - ./husarion_ugv_crsf_teleop/config:/config
     command: >
       ros2 launch husarion_ugv_crsf_teleop teleop.launch.py params_file:=/config/crsf_teleop_panther.yaml
