@@ -36,11 +36,17 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         ros_distro: [humble, jazzy]
+        os: [ubuntu-22.04, ubuntu-22.04-arm64]
+        include:
+          - os: ubuntu-22.04
+            platform: linux/amd64
+          - os: ubuntu-22.04-arm64
+            platform: linux/arm64
 
     steps:
 
@@ -56,7 +62,7 @@ jobs:
           repo_name: crsf-teleop
           build_type: ${{ inputs.build_type }}
           ros_distro: ${{ matrix.ros_distro }}
-          platforms: linux/amd64, linux/arm64
+          platforms: ${{ matrix.platform }}
           # variables important only for stable release
           target_distro: ${{ inputs.target_distro }}
           target_release: ${{ inputs.target_release }}
