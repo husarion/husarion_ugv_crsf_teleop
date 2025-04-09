@@ -1,6 +1,7 @@
 services:
   husarion_ugv_crsf_teleop:
-    image: husarion/crsf-teleop:humble
+    image: husarion/crsf-teleop:humble-1.0.0-20250409
+    container_name: husarion_ugv_crsf_teleop
     network_mode: host
     ipc: host
     pid: host
