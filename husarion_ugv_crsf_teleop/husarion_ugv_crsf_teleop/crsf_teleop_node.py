@@ -114,7 +114,6 @@ class CRSFInterface(Node):
             raise ValueError("Speed presets must be a list of 3 values")
 
         self._serial = None
-        
         try:
             self._serial = serial.Serial(port.value, baud.value, timeout=2)
         except serial.SerialException as e:
@@ -127,7 +126,6 @@ class CRSFInterface(Node):
                 self._serial = serial.Serial(port.value, baud.value, timeout=2)
             except serial.SerialException:
                 pass
-        
         self.get_logger().info(f"Connected to CRSF receiver on {port.value}")
 
         self._parser = CRSFParser()
