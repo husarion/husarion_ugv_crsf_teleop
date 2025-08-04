@@ -17,12 +17,11 @@ from enum import IntEnum
 import rclpy
 import serial
 from geometry_msgs.msg import Twist, TwistStamped
+from husarion_ugv_crsf_interfaces.msg import LinkStatus
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_srvs.srv import Trigger
-
-from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
 from .crsf.message import (
     CRSFMessage,
@@ -115,12 +114,21 @@ class CRSFInterface(Node):
             raise ValueError("Speed presets must be a list of 3 values")
 
         self._serial = None
+        
+        try:
+            self._serial = serial.Serial(port.value, baud.value, timeout=2)
+        except serial.SerialException as e:
+            self.get_logger().error(f"Failed to open serial port, will retry every 2 seconds: {e}")
+
+        # Retry connection until successful
         while self._serial is None:
             try:
-                self._serial = serial.Serial(port.value, baud.value, timeout=2)
-            except serial.SerialException as e:
-                self.get_logger().error(f"Failed to open serial port: {e}")
                 rclpy.spin_once(self, timeout_sec=2)
+                self._serial = serial.Serial(port.value, baud.value, timeout=2)
+            except serial.SerialException:
+                pass
+        
+        self.get_logger().info(f"Connected to CRSF receiver on {port.value}")
 
         self._parser = CRSFParser()
         self._parser.on_message = lambda msg: self._handle_message(msg)
@@ -133,7 +141,7 @@ class CRSFInterface(Node):
 
     def _declare_node_parameters(self):
         self.declare_parameter(
-            "port", "/dev/ttyUSB0", ParameterDescriptor(description="CRSF receiver serial port")
+            "port", "/dev/ttyUSBPAD", ParameterDescriptor(description="CRSF receiver serial port")
         )
         self.declare_parameter(
             "baud", 576000, ParameterDescriptor(description="CRSF receiver baud rate")

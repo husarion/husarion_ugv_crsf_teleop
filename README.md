@@ -159,7 +159,7 @@ RC controller has some additional buttons that can be used for different functio
 
 ### Parameters
 
-- `port` [*string*, default: **/dev/ttyUSB0**]: CRSF receiver serial port".
+- `port` [*string*, default: **/dev/ttyUSBPAD**]: CRSF receiver serial port".
 - `baud` [*int*, default: **576000**]: CRSF receiver baud rate".
 - `cmd_vel_stamped` [*bool*, default: **False**]: Publish cmd_vel as TwistStamped instead of Twist.
 - `e_stop_republish` [*bool*, default: **False**]:  Rebroadcast asserted e-stop signal once per second
