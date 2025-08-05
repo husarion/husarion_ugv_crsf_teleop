@@ -22,6 +22,8 @@ from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_srvs.srv import Trigger
 
+from husarion_ugv_crsf_interfaces.msg import LinkStatus
+
 from .crsf.message import (
     CRSFMessage,
     PacketType,
@@ -29,8 +31,6 @@ from .crsf.message import (
     unpack_channels,
 )
 from .crsf.parser import CRSFParser
-
-from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
 REQUESTED_E_STOP_THRESHOLD = 0.5
 SEND_CMD_VEL_THRESHOLD = -0.5
