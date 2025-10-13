@@ -60,6 +60,7 @@ class CRSFInterface(Node):
             port,
             baud,
             self._cmd_vel_stamped,
+            cmd_vel_topic,
             e_stop_republish,
             self._enable_cmd_vel_silence_switch,
             self._linear_speed_presets,
@@ -69,6 +70,7 @@ class CRSFInterface(Node):
                 "port",
                 "baud",
                 "cmd_vel_stamped",
+                "cmd_vel_topic",
                 "e_stop_republish",
                 "enable_cmd_vel_silence_switch",
                 "linear_speed_presets",
@@ -78,7 +80,7 @@ class CRSFInterface(Node):
 
         self._cmd_vel_publisher = self.create_publisher(
             TwistStamped if self._cmd_vel_stamped.value else Twist,
-            "cmd_vel",
+            cmd_vel_topic.value,
             QoSProfile(
                 reliability=QoSReliabilityPolicy.RELIABLE,
                 durability=QoSDurabilityPolicy.VOLATILE,
@@ -142,6 +144,11 @@ class CRSFInterface(Node):
             "cmd_vel_stamped",
             False,
             ParameterDescriptor(description="Publish cmd_vel as TwistStamped instead of Twist"),
+        )
+        self.declare_parameter(
+            "cmd_vel_topic",
+            "cmd_vel",
+            ParameterDescriptor(description="Topic to publish cmd_vel messages to"),
         )
         self.declare_parameter(
             "e_stop_republish",
