@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ros_distro: [humble, jazzy]
+        ros_distro: [jazzy]
 
     steps:
 
@@ -52,7 +52,7 @@ jobs:
         with:
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          main_branch_name: master
+          main_branch_name: jazzy
           repo_name: crsf-teleop
           build_type: ${{ inputs.build_type }}
           ros_distro: ${{ matrix.ros_distro }}
