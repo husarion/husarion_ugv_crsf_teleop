@@ -4,7 +4,8 @@
       port: /dev/ttyUSBPAD
       baud: 576000
       cmd_vel_stamped: true
+      cmd_vel_topic: cmd_vel
       e_stop_republish: false
-      enable_cmd_vel_silence_switch: false
+      enable_cmd_vel_silence_switch: true
       linear_speed_presets: [0.5, 0.9, 1.5]
       angular_speed_presets: [0.45, 0.9, 2.0]
