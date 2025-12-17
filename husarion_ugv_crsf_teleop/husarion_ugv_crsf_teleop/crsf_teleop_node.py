@@ -251,14 +251,7 @@ class CRSFInterface(Node):
                 self.get_logger().error("Connection lost")
 
                 # Publish empty cmd_vel to stop the robot
-                empty_twist = Twist()
-                if self._cmd_vel_stamped.value:
-                    twist_stamped_msg = TwistStamped()
-                    twist_stamped_msg.header.stamp = self.get_clock().now().to_msg()
-                    twist_stamped_msg.twist = empty_twist
-                    self._cmd_vel_publisher.publish(twist_stamped_msg)
-                else:
-                    self._cmd_vel_publisher.publish(empty_twist)
+                self._publish_twist(Twist())
 
             if last_lq == 0 and self._link_status.lq > 0:
                 self.get_logger().info("Connected")
