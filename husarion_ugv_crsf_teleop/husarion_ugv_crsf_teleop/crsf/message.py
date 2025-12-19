@@ -72,11 +72,11 @@ class CRSFMessage:
             return True
 
     def calculate_crc(self, assign_to_self: bool = True) -> int:
-        crc = self._crc8_dvb_s2(0, self.msg_type)
+        crc = 0
 
-        if self.is_extended():
-            crc = self._crc8_dvb_s2(crc, self.destination)
-            crc = self._crc8_dvb_s2(crc, self.source)
+        # if self.is_extended():
+        #     crc = self._crc8_dvb_s2(crc, self.destination)
+        #     crc = self._crc8_dvb_s2(crc, self.source)
 
         for byte in self.payload:
             crc = self._crc8_dvb_s2(crc, byte)
@@ -87,27 +87,20 @@ class CRSFMessage:
         return crc
 
     def encode(self) -> bytearray:
-        data = bytearray()
-
         if self.msg_type not in PacketType:
             raise ValueError("Invalid message type")
 
-        data.append(CRSF_SYNC)
-        data.append(len(self.payload))
-        data.append(self.msg_type)
+        length = len( self.payload) + 1  # type + payload + crc
+        frame = bytes([CRSF_SYNC, length]) +  self.payload
 
-        if self.is_extended():
-            data.append(self.destination)
-            data.append(self.source)
+        crc = self.calculate_crc(frame[2:])
+        frame = frame + bytes([crc])
 
-        data.extend(self.payload)
-        data.append(self.calculate_crc())
-
-        return data
+        return frame
 
     def _crc8_dvb_s2(self, crc, a) -> int:
         crc = crc ^ a
-        for ii in range(8):
+        for _ in range(8):
             if crc & 0x80:
                 crc = (crc << 1) ^ 0xD5
             else:

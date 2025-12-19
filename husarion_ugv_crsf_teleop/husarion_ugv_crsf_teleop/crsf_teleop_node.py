@@ -21,12 +21,14 @@ from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_srvs.srv import Trigger
+from sensor_msgs.msg import BatteryState
 
 from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
 from .crsf.message import (
     CRSFMessage,
     PacketType,
+    CRSF_SYNC,
     normalize_channel_values,
     unpack_channels,
 )
@@ -65,6 +67,7 @@ class CRSFInterface(Node):
             self._enable_cmd_vel_silence_switch,
             self._linear_speed_presets,
             self._angular_speed_presets,
+            send_telemetry,
         ] = self.get_parameters(
             [
                 "port",
@@ -75,6 +78,7 @@ class CRSFInterface(Node):
                 "enable_cmd_vel_silence_switch",
                 "linear_speed_presets",
                 "angular_speed_presets",
+                "send_telemetry",
             ]
         )
 
@@ -108,6 +112,18 @@ class CRSFInterface(Node):
             "hardware/e_stop_reset",
         )
 
+        if send_telemetry.value:
+            self.battery_subscriber = self.create_subscription(
+                BatteryState,
+                "/lynx/battery/battery_status",
+                self._battery_state_callback,
+                QoSProfile(
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    depth=1,
+                ),
+            )
+
         self._link_status = LinkStatus()
 
         if (
@@ -120,6 +136,7 @@ class CRSFInterface(Node):
         while self._serial is None:
             try:
                 self._serial = serial.Serial(port.value, baud.value, timeout=2)
+                self.get_logger().info(f"Opened serial port {port.value} at {baud.value} baud")
             except serial.SerialException as e:
                 self.get_logger().error(f"Failed to open serial port: {e}")
                 rclpy.spin_once(self, timeout_sec=2)
@@ -132,6 +149,8 @@ class CRSFInterface(Node):
         self._rc_estop_state = True
         if e_stop_republish.value:
             self.e_stop_republisher = self.create_timer(1, self._update_e_stop)
+
+        self.get_logger().info("CRSF Interface node initialized")
 
     def _declare_node_parameters(self):
         self.declare_parameter(
@@ -179,11 +198,18 @@ class CRSFInterface(Node):
             ),
         )
 
+        self.declare_parameter(
+            "send_telemetry",
+            True,
+            ParameterDescriptor(description="Enable sending telemetry to the RC transmitter"),
+        )
+
     def _serial_parser_timer_cb(self):
         if self._serial.in_waiting > 0:
             self._parser.parse(self._serial.read(self._serial.in_waiting))
 
     def _handle_message(self, msg: CRSFMessage):
+        # self.get_logger().info(f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}")
         if msg.msg_type == PacketType.RC_CHANNELS_PACKED:
             channels = unpack_channels(msg.payload)
             channels = normalize_channel_values(channels)
@@ -284,6 +310,36 @@ class CRSFInterface(Node):
             self._cmd_vel_publisher.publish(twist_stamped_msg)
         else:
             self._cmd_vel_publisher.publish(twist)
+
+    def build_battery_payload(self, voltage, current, capacity, percent):
+        vbat_raw = int(voltage * 10)
+        curr_raw = int(current * 10)
+        vbat_bytes = vbat_raw.to_bytes(2, byteorder='big', signed=True)
+        curr_bytes = curr_raw.to_bytes(2, byteorder='big', signed=True)
+        pct = bytes([int(percent* 100)])
+        mah_bytes = bytes([0x00, 0x00, 0x00])  # placeholder mAh bytes
+        type_byte = PacketType.BATTERY_SENSOR.value
+
+
+        data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
+        return data
+
+    def _battery_state_callback(self, msg: BatteryState):
+        self.get_logger().info(f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}")
+
+        data = self.build_battery_payload(
+            msg.voltage,
+            msg.current,
+            msg.capacity,
+            msg.percentage
+        )
+
+        telemetry_msg = CRSFMessage(PacketType.BATTERY_SENSOR, data)
+
+        self._serial.write(telemetry_msg.encode())
+        self._serial.flush()
+
+
 
 
 def main(args=None):
