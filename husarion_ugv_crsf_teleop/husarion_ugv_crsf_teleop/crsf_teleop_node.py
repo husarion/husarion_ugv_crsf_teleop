@@ -151,7 +151,7 @@ class CRSFInterface(Node):
                 ),
             )
 
-            self.telemetry_timer = self.create_timer(1.0, lambda: self._telemetry_timer_callback())  # Placeholder for future use
+            self.telemetry_timer = self.create_timer(2.0, lambda: self._telemetry_timer_callback()) 
 
         self._link_status = LinkStatus()
 
@@ -352,7 +352,7 @@ class CRSFInterface(Node):
 
         data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
         return data
-    
+
 
     def build_rpm_payload(self, motors):
         data = bytearray()
@@ -396,16 +396,18 @@ class CRSFInterface(Node):
 
         data = self.build_e_stop_payload(state)
         self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
+        self._serial.write(self.e_stop_telemetry.encode())
+        self._serial.flush()
 
     def _telemetry_timer_callback(self):
-        telemetry_messages=[self.battery_telemetry, self.e_stop_telemetry]
+        telemetry_messages=[self.battery_telemetry]
 
         for telemetry in telemetry_messages:
             if telemetry is not None:
-                self.get_logger().info(f"sending telemetry message: {telemetry.msg_type.name}")
                 self._serial.write(telemetry.encode())
-                self.get_logger().debug(f"sent telemetry message: {telemetry.msg_type.name}")
-                telemetry = None 
+                self._serial.flush()
+
+                telemetry = None
 
 
 def main(args=None):

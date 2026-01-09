@@ -73,11 +73,11 @@ class CRSFMessage:
             return True
 
     def calculate_crc(self, assign_to_self: bool = True) -> int:
-        crc = 0
+        crc = self._crc8_dvb_s2(0, self.msg_type)
 
-        # if self.is_extended():
-        #     crc = self._crc8_dvb_s2(crc, self.destination)
-        #     crc = self._crc8_dvb_s2(crc, self.source)
+        if self.is_extended():
+            crc = self._crc8_dvb_s2(crc, self.destination)
+            crc = self._crc8_dvb_s2(crc, self.source)
 
         for byte in self.payload:
             crc = self._crc8_dvb_s2(crc, byte)
@@ -87,6 +87,15 @@ class CRSFMessage:
 
         return crc
 
+    def encode_erc(self, assign_to_self: bool = True) ->int :
+        crc = 0
+        for byte in self.payload:
+            crc = self._crc8_dvb_s2(crc, byte)
+
+        if assign_to_self:
+            self.crc = crc
+
+        return crc
     def encode(self) -> bytearray:
         if self.msg_type not in PacketType:
             raise ValueError("Invalid message type")
@@ -94,7 +103,7 @@ class CRSFMessage:
         length = len( self.payload) + 1  # type + payload + crc
         frame = bytes([CRSF_SYNC, length]) +  self.payload
 
-        crc = self.calculate_crc(frame[2:])
+        crc = self.encode_erc(frame[2:])
         frame = frame + bytes([crc])
 
         return frame
