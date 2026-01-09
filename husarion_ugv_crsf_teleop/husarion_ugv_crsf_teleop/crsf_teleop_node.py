@@ -21,7 +21,8 @@ from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_srvs.srv import Trigger
-from sensor_msgs.msg import BatteryState
+from sensor_msgs.msg import BatteryState, JointState
+from std_msgs.msg import Bool
 
 from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
@@ -113,6 +114,10 @@ class CRSFInterface(Node):
         )
 
         if send_telemetry.value:
+            self.battery_telemetry = None
+            self.rpm_telemetry = None
+            self.e_stop_telemetry = None
+
             self.battery_subscriber = self.create_subscription(
                 BatteryState,
                 "/lynx/battery/battery_status",
@@ -123,6 +128,30 @@ class CRSFInterface(Node):
                     depth=1,
                 ),
             )
+
+            self.joint_state_subscriber = self.create_subscription(
+                JointState,
+                "/lynx/joint_states",
+                self._joint_state_callback,
+                QoSProfile(
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    durability=QoSDurabilityPolicy.VOLATILE,
+                    depth=1,
+                ),
+            )
+
+            self.e_stop_subscriber = self.create_subscription(
+                Bool,
+                "/lynx/hardware/e_stop",
+                self._e_stop_callback,
+                QoSProfile(
+                    reliability=QoSReliabilityPolicy.RELIABLE,
+                    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                    depth=1,
+                ),
+            )
+
+            self.telemetry_timer = self.create_timer(1.0, lambda: self._telemetry_timer_callback())  # Placeholder for future use
 
         self._link_status = LinkStatus()
 
@@ -200,7 +229,7 @@ class CRSFInterface(Node):
 
         self.declare_parameter(
             "send_telemetry",
-            True,
+            False,
             ParameterDescriptor(description="Enable sending telemetry to the RC transmitter"),
         )
 
@@ -323,9 +352,30 @@ class CRSFInterface(Node):
 
         data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
         return data
+    
+
+    def build_rpm_payload(self, motors):
+        data = bytearray()
+        rpm_source_id = bytes([0x00])  # placeholder m
+        for motor in motors:
+            rpm_values = int(motor*100)
+            rpm = rpm_values.to_bytes(3, byteorder='big', signed=True)
+            data += rpm
+
+        type_byte = PacketType.RPM.value
+        data = bytes([type_byte]) + rpm_source_id+ data
+        return data
+
+    def build_e_stop_payload(self, e_stop_state: str):
+        data = bytearray()
+        type_byte = PacketType.FLIGHT_MODE.value
+
+        p = bytes(e_stop_state.encode('utf-8'))
+        data = bytes([type_byte]) + p
+        return data
 
     def _battery_state_callback(self, msg: BatteryState):
-        self.get_logger().info(f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}")
+        self.get_logger().debug(f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}")
 
         data = self.build_battery_payload(
             msg.voltage,
@@ -334,12 +384,28 @@ class CRSFInterface(Node):
             msg.percentage
         )
 
-        telemetry_msg = CRSFMessage(PacketType.BATTERY_SENSOR, data)
-
-        self._serial.write(telemetry_msg.encode())
-        self._serial.flush()
+        self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
 
+    def _joint_state_callback(self, msg: JointState):
+        build_rpm_payload = self.build_rpm_payload(msg.effort)
+        self.rpm_telemetry = CRSFMessage(PacketType.RPM, build_rpm_payload)
+
+    def _e_stop_callback(self, msg: Bool):
+        state =  "STOP\0" if msg.data else "READY\0"
+
+        data = self.build_e_stop_payload(state)
+        self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
+
+    def _telemetry_timer_callback(self):
+        telemetry_messages=[self.battery_telemetry, self.e_stop_telemetry]
+
+        for telemetry in telemetry_messages:
+            if telemetry is not None:
+                self.get_logger().info(f"sending telemetry message: {telemetry.msg_type.name}")
+                self._serial.write(telemetry.encode())
+                self.get_logger().debug(f"sent telemetry message: {telemetry.msg_type.name}")
+                telemetry = None 
 
 
 def main(args=None):
