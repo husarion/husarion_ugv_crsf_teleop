@@ -81,30 +81,23 @@ class CRSFInterface(Node):
             ]
         )
 
-        try:
-            self._channels_srv_setbool = self.get_parameter("channels_srv_setbool")
-        except rclpy.exceptions.ParameterUninitializedException:
-            self._channels_srv_setbool = []
+        PARAM_TO_ATTR = {
+            "channels_srv_setbool": "_channels_srv_setbool",
+            "channels_srv_trigger": "_channels_srv_trigger",
+            "channels_srv_empty": "_channels_srv_empty",
+            "channels_msg_float": "_channels_msg_float",
+            "channels_msg_bool": "_channels_msg_bool",
+        }
 
-        try:
-            self._channels_srv_trigger = self.get_parameter("channels_srv_trigger")
-        except rclpy.exceptions.ParameterUninitializedException:
-            self._channels_srv_trigger = []
-
-        try:
-            self._channels_srv_empty = self.get_parameter("channels_srv_empty")
-        except rclpy.exceptions.ParameterUninitializedException:
-            self._channels_srv_empty = []
-
-        try:
-            self._channels_msg_float = self.get_parameter("channels_msg_float")
-        except rclpy.exceptions.ParameterUninitializedException:
-            self._channels_msg_float = []
-
-        try:
-            self._channels_msg_bool = self.get_parameter("channels_msg_bool")
-        except rclpy.exceptions.ParameterUninitializedException:
-            self._channels_msg_bool = []
+        for param_name, attr_name in PARAM_TO_ATTR.items():
+            try:
+                setattr(
+                    self,
+                    attr_name,
+                    self.get_parameter(param_name).value,
+                )
+            except rclpy.exceptions.ParameterUninitializedException:
+                setattr(self, attr_name, [])
 
         self._cmd_vel_publisher = self.create_publisher(
             TwistStamped if self._cmd_vel_stamped.value else Twist,
@@ -139,7 +132,7 @@ class CRSFInterface(Node):
         self._channels_srv_setbool_clients = {}
         self._channels_srv_setbool_clients_state = {}
         if self._channels_srv_setbool:
-            for channel in self._channels_srv_setbool.value:
+            for channel in self._channels_srv_setbool:
                 self._channels_srv_setbool_clients[channel] = self.create_client(
                     SetBool,
                     f"crsf_channel{channel}/set_bool",
@@ -149,7 +142,7 @@ class CRSFInterface(Node):
         self._channels_srv_trigger_clients = {}
         self._channels_srv_trigger_clients_state = {}
         if self._channels_srv_trigger:
-            for channel in self._channels_srv_trigger.value:
+            for channel in self._channels_srv_trigger:
                 self._channels_srv_trigger_clients[channel] = self.create_client(
                     Trigger,
                     f"crsf_channel{channel}/trigger",
@@ -159,7 +152,7 @@ class CRSFInterface(Node):
         self._channels_srv_empty_clients = {}
         self._channels_srv_empty_clients_state = {}
         if self._channels_srv_empty:
-            for channel in self._channels_srv_empty.value:
+            for channel in self._channels_srv_empty:
                 self._channels_srv_empty_clients[channel] = self.create_client(
                     Empty,
                     f"crsf_channel{channel}/empty",
@@ -169,7 +162,7 @@ class CRSFInterface(Node):
         # State not needed for msg, only for srv
         self._channels_msg_float_publishers = {}
         if self._channels_msg_float:
-            for channel in self._channels_msg_float.value:
+            for channel in self._channels_msg_float:
                 self._channels_msg_float_publishers[channel] = self.create_publisher(
                     Float32,
                     f"crsf_channel{channel}/float",
@@ -178,7 +171,7 @@ class CRSFInterface(Node):
 
         self._channels_msg_bool_publishers = {}
         if self._channels_msg_bool:
-            for channel in self._channels_msg_bool.value:
+            for channel in self._channels_msg_bool:
                 self._channels_msg_bool_publishers[channel] = self.create_publisher(
                     Bool,
                     f"crsf_channel{channel}/bool",
@@ -306,6 +299,8 @@ class CRSFInterface(Node):
                 req = SetBool.Request()
                 req.data = new_state
                 client.call_async(req)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for SetBool service")
 
         for channel, client in self._channels_srv_trigger_clients.items():
             if channel < len(channels):
@@ -316,6 +311,8 @@ class CRSFInterface(Node):
                 if channels[channel] > SRV_MSG_THRESHOLD:
                     req = Trigger.Request()
                     client.call_async(req)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Trigger service")
 
         for channel, client in self._channels_srv_empty_clients.items():
             if channel < len(channels):
@@ -326,18 +323,24 @@ class CRSFInterface(Node):
                 if channels[channel] > SRV_MSG_THRESHOLD:
                     req = Empty.Request()
                     client.call_async(req)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Empty service")
 
         for channel, publisher in self._channels_msg_float_publishers.items():
             if channel < len(channels):
                 msg = Float32()
                 msg.data = float(channels[channel])
                 publisher.publish(msg)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Float32 message")
 
         for channel, publisher in self._channels_msg_bool_publishers.items():
             if channel < len(channels):
                 msg = Bool()
                 msg.data = channels[channel] > SRV_MSG_THRESHOLD
                 publisher.publish(msg)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Bool message")
 
     def _handle_message(self, msg: CRSFMessage):
         if msg.msg_type == PacketType.RC_CHANNELS_PACKED:
