@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from time import sleep
 
 import rclpy
@@ -22,7 +22,7 @@ from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_srvs.srv import Trigger
-from sensor_msgs.msg import BatteryState, JointState
+from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool
 
 from husarion_ugv_crsf_interfaces.msg import LinkStatus
@@ -53,6 +53,11 @@ class Switch(IntEnum):
     SA = 6
     SG = 10
 
+class FlightMode(StrEnum):
+    READY = "READY\0"
+    STOPPED = "STOPPED\0"
+    TELE = "TELE\0"
+    AUTO = "AUTO\0"
 
 class CRSFInterface(Node):
     def __init__(self):
@@ -130,20 +135,9 @@ class CRSFInterface(Node):
                 ),
             )
 
-            self.joint_state_subscriber = self.create_subscription(
-                JointState,
-                "/lynx/joint_states",
-                self._joint_state_callback,
-                QoSProfile(
-                    reliability=QoSReliabilityPolicy.RELIABLE,
-                    durability=QoSDurabilityPolicy.VOLATILE,
-                    depth=1,
-                ),
-            )
-
             self.e_stop_subscriber = self.create_subscription(
                 Bool,
-                "/lynx/hardware/e_stop",
+                "hardware/e_stop",
                 self._e_stop_callback,
                 QoSProfile(
                     reliability=QoSReliabilityPolicy.RELIABLE,
@@ -152,8 +146,7 @@ class CRSFInterface(Node):
                 ),
             )
 
-            self.telemetry_timer = self.create_timer(2.0, lambda: self._telemetry_timer_callback()) 
-
+            self.telemetry_timer = self.create_timer(2.0, lambda: self._telemetry_timer_callback())
         self._link_status = LinkStatus()
 
         if (
@@ -392,13 +385,8 @@ class CRSFInterface(Node):
 
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
-
-    def _joint_state_callback(self, msg: JointState):
-        build_rpm_payload = self.build_rpm_payload(msg.effort)
-        self.rpm_telemetry = CRSFMessage(PacketType.RPM, build_rpm_payload)
-
     def _e_stop_callback(self, msg: Bool):
-        state =  "STOP\0" if msg.data else "READY\0"
+        state =  FlightMode.STOPPED if msg.data else FlightMode.READY
 
         data = self.build_e_stop_payload(state)
         self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
