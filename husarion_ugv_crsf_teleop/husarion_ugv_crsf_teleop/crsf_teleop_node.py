@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from enum import IntEnum
+from time import sleep
 
 import rclpy
 import serial
@@ -168,6 +169,7 @@ class CRSFInterface(Node):
                 self.get_logger().info(f"Opened serial port {port.value} at {baud.value} baud")
             except serial.SerialException as e:
                 self.get_logger().error(f"Failed to open serial port: {e}")
+                sleep(2)
                 rclpy.spin_once(self, timeout_sec=2)
 
         self._parser = CRSFParser()
@@ -234,11 +236,15 @@ class CRSFInterface(Node):
         )
 
     def _serial_parser_timer_cb(self):
-        if self._serial.in_waiting > 0:
-            self._parser.parse(self._serial.read(self._serial.in_waiting))
+        try:
+            if self._serial and self._serial.in_waiting > 0:
+                self._parser.parse(self._serial.read(self._serial.in_waiting))
+        except OSError as e:
+            self.get_logger().error(f"Serial port error: {e}")
+            raise RuntimeError("Serial port error") from e
 
     def _handle_message(self, msg: CRSFMessage):
-        # self.get_logger().info(f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}")
+        self.get_logger().debug(f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}")
         if msg.msg_type == PacketType.RC_CHANNELS_PACKED:
             channels = unpack_channels(msg.payload)
             channels = normalize_channel_values(channels)
@@ -396,19 +402,24 @@ class CRSFInterface(Node):
 
         data = self.build_e_stop_payload(state)
         self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
-        self._serial.write(self.e_stop_telemetry.encode())
-        self._serial.flush()
+
+        self._write_serial(self.e_stop_telemetry)
 
     def _telemetry_timer_callback(self):
         telemetry_messages=[self.battery_telemetry]
 
         for telemetry in telemetry_messages:
-            if telemetry is not None:
-                self._serial.write(telemetry.encode())
-                self._serial.flush()
-
+            if telemetry is not None and self._serial:
+                self._write_serial(telemetry)
                 telemetry = None
 
+    def _write_serial(self, msg: CRSFMessage):
+        try:
+            if self._serial:
+                self._serial.write(msg.encode())
+                self._serial.flush()
+        except serial.SerialException as e:
+            self.get_logger().error(f"Serial write error: {e}")
 
 def main(args=None):
     rclpy.init(args=args)

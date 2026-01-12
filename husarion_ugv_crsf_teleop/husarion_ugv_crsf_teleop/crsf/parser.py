@@ -64,6 +64,7 @@ class CRSFParser:
                 # Remove invalid message/byte from the buffer
                 self._buffer = self._buffer[length:]
                 i = 0
+                print("CRSFParser: Discarded invalid byte/message")
 
             elif result == self.Result.IN_PROGRESS:
                 i += length
@@ -133,13 +134,17 @@ class CRSFParser:
         elif self.state == self.State.MSG_CRC:
             # Reset parser
             self.state = self.State.SEEK_SYNC
+            length = len(self._msg.payload) + 4 + (2 if self._msg.is_extended() else 0)
 
             if self._msg.calculate_crc() == byte:
                 # Packet len consists of payload length + 4 bytes for sync, len, type and crc
                 # + 2 bytes if packet has an extended format
                 return (
                     self.Result.PACKET_VALID,
-                    len(self._msg.payload) + 4 + (2 if self._msg.is_extended() else 0),
+                    length,
                 )
             else:
-                return INVALID_DISCARD_BYTE
+                return (
+                    self.Result.PACKET_INVALID,
+                    length,
+                )
