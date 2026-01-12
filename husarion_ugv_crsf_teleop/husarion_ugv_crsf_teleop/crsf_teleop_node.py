@@ -121,7 +121,6 @@ class CRSFInterface(Node):
 
         if send_telemetry.value:
             self.battery_telemetry = None
-            self.rpm_telemetry = None
             self.e_stop_telemetry = None
 
             self.battery_subscriber = self.create_subscription(
@@ -352,18 +351,6 @@ class CRSFInterface(Node):
         data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
         return data
 
-
-    def build_rpm_payload(self, motors):
-        data = bytearray()
-        rpm_source_id = bytes([0x00])  # placeholder m
-        for motor in motors:
-            rpm_values = int(motor*100)
-            rpm = rpm_values.to_bytes(3, byteorder='big', signed=True)
-            data += rpm
-
-        type_byte = PacketType.RPM.value
-        data = bytes([type_byte]) + rpm_source_id+ data
-        return data
 
     def build_e_stop_payload(self, e_stop_state: str):
         data = bytearray()
