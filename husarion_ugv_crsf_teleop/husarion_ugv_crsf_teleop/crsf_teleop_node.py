@@ -21,16 +21,15 @@ from geometry_msgs.msg import Twist, TwistStamped
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
-from std_srvs.srv import Trigger
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool
+from std_srvs.srv import Trigger
 
 from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
 from .crsf.message import (
     CRSFMessage,
     PacketType,
-    CRSF_SYNC,
     normalize_channel_values,
     unpack_channels,
 )
@@ -53,11 +52,13 @@ class Switch(IntEnum):
     SA = 6
     SG = 10
 
+
 class FlightMode(StrEnum):
     READY = "READY\0"
     STOPPED = "STOPPED\0"
     TELE = "TELE\0"
     AUTO = "AUTO\0"
+
 
 class CRSFInterface(Node):
     def __init__(self):
@@ -236,7 +237,9 @@ class CRSFInterface(Node):
             raise RuntimeError("Serial port error") from e
 
     def _handle_message(self, msg: CRSFMessage):
-        self.get_logger().debug(f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}")
+        self.get_logger().debug(
+            f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}"
+        )
         if msg.msg_type == PacketType.RC_CHANNELS_PACKED:
             channels = unpack_channels(msg.payload)
             channels = normalize_channel_values(channels)
@@ -277,7 +280,11 @@ class CRSFInterface(Node):
                 if abs(twist_msg.angular.z) < PAD_DEADZONE:
                     twist_msg.angular.z = 0.0
 
+                self.get_logger().info(
+                    f"Publishing cmd_vel: linear.x={twist_msg.linear.x}, angular.z={twist_msg.angular.z}"
+                )
                 self._publish_twist(twist_msg)
+                self.get_logger().info("cmd_vel published")
 
         elif msg.msg_type == PacketType.LINK_STATISTICS:
             last_lq = self._link_status.lq
@@ -318,7 +325,10 @@ class CRSFInterface(Node):
                 elif last_lq < 30 and self._link_status.lq >= LINK_QUALITY_LOW_THRESHOLD:
                     self.get_logger().info(f"Link quality restored: {self._link_status.lq}%")
 
-            self._link_status_publisher.publish(self._link_status)
+            self.get_logger().info(
+                f"Link Status - RSSI1: {self._link_status.rssi_1} dBm, RSSI2: {self._link_status.rssi_2} dBm, LQ: {self._link_status.lq}%, Uplink SNR: {self._link_status.uplink_snr} dB, Used Antenna: {self._link_status.used_antenna}, Mode: {self._link_status.mode}, TX Power: {self._link_status.tx_power} dBm, Downlink RSSI: {self._link_status.downlink_rssi} dBm, Downlink LQ: {self._link_status.downlink_lq}%, Downlink SNR: {self._link_status.downlink_snr} dB"
+            )
+            self.get_logger().info("Link status published")
 
         else:
             self.get_logger().warn(
@@ -341,50 +351,49 @@ class CRSFInterface(Node):
     def build_battery_payload(self, voltage, current, capacity, percent):
         vbat_raw = int(voltage * 10)
         curr_raw = int(current * 10)
-        vbat_bytes = vbat_raw.to_bytes(2, byteorder='big', signed=True)
-        curr_bytes = curr_raw.to_bytes(2, byteorder='big', signed=True)
-        pct = bytes([int(percent* 100)])
+        vbat_bytes = vbat_raw.to_bytes(2, byteorder="big", signed=True)
+        curr_bytes = curr_raw.to_bytes(2, byteorder="big", signed=True)
+        pct = bytes([int(percent * 100)])
         mah_bytes = bytes([0x00, 0x00, 0x00])  # placeholder mAh bytes
         type_byte = PacketType.BATTERY_SENSOR.value
 
-
         data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
         return data
-
 
     def build_e_stop_payload(self, e_stop_state: str):
         data = bytearray()
         type_byte = PacketType.FLIGHT_MODE.value
 
-        p = bytes(e_stop_state.encode('utf-8'))
+        p = bytes(e_stop_state.encode("utf-8"))
         data = bytes([type_byte]) + p
         return data
 
     def _battery_state_callback(self, msg: BatteryState):
-        self.get_logger().debug(f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}")
-
-        data = self.build_battery_payload(
-            msg.voltage,
-            msg.current,
-            msg.capacity,
-            msg.percentage
+        self.get_logger().debug(
+            f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}"
         )
+
+        data = self.build_battery_payload(msg.voltage, msg.current, msg.capacity, msg.percentage)
 
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
     def _e_stop_callback(self, msg: Bool):
-        state =  FlightMode.STOPPED if msg.data else FlightMode.READY
+        state = FlightMode.STOPPED if msg.data else FlightMode.READY
 
         data = self.build_e_stop_payload(state)
         self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
 
+        self.get_logger().info(f"sending e-stop telemetry: state={msg.data}")
         self._write_serial(self.e_stop_telemetry)
 
     def _telemetry_timer_callback(self):
-        telemetry_messages=[self.battery_telemetry]
+        telemetry_messages = [self.battery_telemetry]
 
         for telemetry in telemetry_messages:
             if telemetry is not None and self._serial:
+                self.get_logger().info(
+                    f"Sending telemetry message: Type={telemetry.msg_type.name}, Length={len(telemetry.payload)}"
+                )
                 self._write_serial(telemetry)
                 telemetry = None
 
@@ -395,6 +404,7 @@ class CRSFInterface(Node):
                 self._serial.flush()
         except serial.SerialException as e:
             self.get_logger().error(f"Serial write error: {e}")
+
 
 def main(args=None):
     rclpy.init(args=args)
