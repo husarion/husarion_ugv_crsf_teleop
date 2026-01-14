@@ -100,7 +100,7 @@ class CRSFParser:
             self.state = self.State.MSG_TYPE
             return IN_PROGRESS
 
-        elif self.state == self.state.MSG_TYPE:
+        elif self.state == self.State.MSG_TYPE:
             try:
                 self._msg.msg_type = PacketType(byte)
             except ValueError:
@@ -131,15 +131,14 @@ class CRSFParser:
             return IN_PROGRESS
 
         elif self.state == self.State.MSG_CRC:
-            if self._msg.calculate_crc() == byte:
-                # Reset parser
-                self.state = self.State.SEEK_SYNC
+            # Reset parser even if the packet is invalid
+            self.state = self.State.SEEK_SYNC
 
-                # Packet len consists of payload length + 4 bytes for sync, len, type and crc
-                # + 2 bytes if packet has an extended format
-                return (
-                    self.Result.PACKET_VALID,
-                    len(self._msg.payload) + 4 + (2 if self._msg.is_extended() else 0),
-                )
+            # Packet length consists of payload length + 4 bytes for sync, length, type and crc
+            # + 2 bytes if packet has an extended format
+            length = len(self._msg.payload) + 4 + (2 if self._msg.is_extended() else 0)
+
+            if self._msg.calculate_crc() == byte:
+                return (self.Result.PACKET_VALID, length)
             else:
-                return INVALID_DISCARD_BYTE
+                return (self.Result.PACKET_INVALID, length)
