@@ -139,3 +139,25 @@ def normalize_channel_values(channels: List[int]) -> List[float]:
         raise ValueError("Input data must contain 16 channels")
 
     return [(channel - 992) / 820.0 for channel in channels]
+
+
+def build_battery_payload(voltage, current, percent):
+    vbat_raw = int(voltage * 10)
+    curr_raw = int(current * 10)
+    vbat_bytes = vbat_raw.to_bytes(2, byteorder="big", signed=True)
+    curr_bytes = curr_raw.to_bytes(2, byteorder="big", signed=True)
+    pct = bytes([int(percent * 100)])
+    mah_bytes = bytes([0x00, 0x00, 0x00])  # placeholder mAh bytes
+    type_byte = PacketType.BATTERY_SENSOR.value
+
+    data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
+    return data
+
+
+def build_e_stop_payload(e_stop_state: str):
+    data = bytearray()
+    type_byte = PacketType.FLIGHT_MODE.value
+
+    p = bytes(e_stop_state.encode("utf-8"))
+    data = bytes([type_byte]) + p
+    return data

@@ -30,6 +30,8 @@ from husarion_ugv_crsf_interfaces.msg import LinkStatus
 from .crsf.message import (
     CRSFMessage,
     PacketType,
+    build_battery_payload,
+    build_e_stop_payload,
     normalize_channel_values,
     unpack_channels,
 )
@@ -508,39 +510,19 @@ class CRSFInterface(Node):
         else:
             self._cmd_vel_publisher.publish(twist)
 
-    def build_battery_payload(self, voltage, current, capacity, percent):
-        vbat_raw = int(voltage * 10)
-        curr_raw = int(current * 10)
-        vbat_bytes = vbat_raw.to_bytes(2, byteorder="big", signed=True)
-        curr_bytes = curr_raw.to_bytes(2, byteorder="big", signed=True)
-        pct = bytes([int(percent * 100)])
-        mah_bytes = bytes([0x00, 0x00, 0x00])  # placeholder mAh bytes
-        type_byte = PacketType.BATTERY_SENSOR.value
-
-        data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
-        return data
-
-    def build_e_stop_payload(self, e_stop_state: str):
-        data = bytearray()
-        type_byte = PacketType.FLIGHT_MODE.value
-
-        p = bytes(e_stop_state.encode("utf-8"))
-        data = bytes([type_byte]) + p
-        return data
-
     def _battery_state_callback(self, msg: BatteryState):
         self.get_logger().debug(
             f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}"
         )
 
-        data = self.build_battery_payload(msg.voltage, msg.current, msg.capacity, msg.percentage)
+        data = build_battery_payload(msg.voltage, msg.current, msg.capacity, msg.percentage)
 
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
     def _e_stop_callback(self, msg: Bool):
         state = FlightMode.STOPPED if msg.data else FlightMode.READY
 
-        data = self.build_e_stop_payload(state)
+        data = build_e_stop_payload(state)
         self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
 
         self.get_logger().info(f"sending e-stop telemetry: state={msg.data}")
