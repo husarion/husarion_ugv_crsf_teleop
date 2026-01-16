@@ -2,7 +2,7 @@
   crsf_teleop:
     ros__parameters:
       port: /dev/ttyUSBPAD
-      baud: 400000
+      baud: 576000
       cmd_vel_stamped: true
       cmd_vel_topic: cmd_vel
       e_stop_republish: false
@@ -11,3 +11,8 @@
       angular_speed_presets: [0.45, 0.9, 2.0]
       send_telemetry: True
       use_sim_time: False
+      channels_srv_setbool: []
+      channels_srv_trigger: []
+      channels_srv_empty: []
+      channels_msg_float: []
+      channels_msg_bool: []

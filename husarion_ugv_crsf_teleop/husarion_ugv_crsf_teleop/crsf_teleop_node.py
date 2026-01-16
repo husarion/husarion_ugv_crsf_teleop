@@ -22,8 +22,8 @@ from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import BatteryState
-from std_msgs.msg import Bool
-from std_srvs.srv import Trigger
+from std_msgs.msg import Bool, Float32
+from std_srvs.srv import Empty, SetBool, Trigger
 
 from husarion_ugv_crsf_interfaces.msg import LinkStatus
 
@@ -37,6 +37,8 @@ from .crsf.parser import CRSFParser
 
 REQUESTED_E_STOP_THRESHOLD = 0.5
 SEND_CMD_VEL_THRESHOLD = -0.5
+
+SRV_MSG_THRESHOLD = 0.5
 
 LINK_QUALITY_VERY_LOW_THRESHOLD = 15
 LINK_QUALITY_LOW_THRESHOLD = 30
@@ -89,6 +91,24 @@ class CRSFInterface(Node):
                 "send_telemetry",
             ]
         )
+
+        PARAM_TO_ATTR = {
+            "channels_srv_setbool": "_channels_srv_setbool",
+            "channels_srv_trigger": "_channels_srv_trigger",
+            "channels_srv_empty": "_channels_srv_empty",
+            "channels_msg_float": "_channels_msg_float",
+            "channels_msg_bool": "_channels_msg_bool",
+        }
+
+        for param_name, attr_name in PARAM_TO_ATTR.items():
+            try:
+                setattr(
+                    self,
+                    attr_name,
+                    self.get_parameter(param_name).value,
+                )
+            except rclpy.exceptions.ParameterUninitializedException:
+                setattr(self, attr_name, [])
 
         self._cmd_vel_publisher = self.create_publisher(
             TwistStamped if self._cmd_vel_stamped.value else Twist,
@@ -147,6 +167,56 @@ class CRSFInterface(Node):
             )
 
             self.telemetry_timer = self.create_timer(2.0, lambda: self._telemetry_timer_callback())
+
+        self._channels_srv_setbool_clients = {}
+        self._channels_srv_setbool_clients_state = {}
+        if self._channels_srv_setbool:
+            for channel in self._channels_srv_setbool:
+                self._channels_srv_setbool_clients[channel] = self.create_client(
+                    SetBool,
+                    f"crsf_channel{channel}/set_bool",
+                )
+                self._channels_srv_setbool_clients_state[channel] = float("nan")
+
+        self._channels_srv_trigger_clients = {}
+        self._channels_srv_trigger_clients_state = {}
+        if self._channels_srv_trigger:
+            for channel in self._channels_srv_trigger:
+                self._channels_srv_trigger_clients[channel] = self.create_client(
+                    Trigger,
+                    f"crsf_channel{channel}/trigger",
+                )
+                self._channels_srv_trigger_clients_state[channel] = float("nan")
+
+        self._channels_srv_empty_clients = {}
+        self._channels_srv_empty_clients_state = {}
+        if self._channels_srv_empty:
+            for channel in self._channels_srv_empty:
+                self._channels_srv_empty_clients[channel] = self.create_client(
+                    Empty,
+                    f"crsf_channel{channel}/empty",
+                )
+                self._channels_srv_empty_clients_state[channel] = float("nan")
+
+        # State not needed for msg, only for srv
+        self._channels_msg_float_publishers = {}
+        if self._channels_msg_float:
+            for channel in self._channels_msg_float:
+                self._channels_msg_float_publishers[channel] = self.create_publisher(
+                    Float32,
+                    f"crsf_channel{channel}/float",
+                    10,
+                )
+
+        self._channels_msg_bool_publishers = {}
+        if self._channels_msg_bool:
+            for channel in self._channels_msg_bool:
+                self._channels_msg_bool_publishers[channel] = self.create_publisher(
+                    Bool,
+                    f"crsf_channel{channel}/bool",
+                    10,
+                )
+
         self._link_status = LinkStatus()
 
         if (
@@ -227,6 +297,41 @@ class CRSFInterface(Node):
             False,
             ParameterDescriptor(description="Enable sending telemetry to the RC transmitter"),
         )
+        self.declare_parameter(
+            "channels_srv_setbool",
+            [
+                12
+            ],  # Default to some random channel, as you can't have empty default list parameter in rclpy :(
+            ParameterDescriptor(
+                description="RC channels mapped to SetBool services",
+            ),
+        )
+        self.declare_parameter(
+            "channels_srv_trigger",
+            [12],
+            ParameterDescriptor(
+                description="RC channels mapped to Trigger services",
+            ),
+        )
+        self.declare_parameter(
+            "channels_srv_empty",
+            [12],
+            ParameterDescriptor(
+                description="RC channels mapped to Empty services",
+            ),
+        )
+        self.declare_parameter(
+            "channels_msg_float",
+            [12],
+            ParameterDescriptor(
+                description="RC channels mapped to Float32 messages",
+            ),
+        )
+        self.declare_parameter(
+            "channels_msg_bool",
+            [12],
+            ParameterDescriptor(description="RC channels mapped to Bool messages"),
+        )
 
     def _serial_parser_timer_cb(self):
         try:
@@ -236,6 +341,59 @@ class CRSFInterface(Node):
             self.get_logger().error(f"Serial port error: {e}")
             raise RuntimeError("Serial port error") from e
 
+    def _handle_channel_services_and_messages(self, channels):
+        for channel, client in self._channels_srv_setbool_clients.items():
+            if channel < len(channels):
+                new_state = channels[channel] > SRV_MSG_THRESHOLD
+                if new_state == self._channels_srv_setbool_clients_state[channel]:
+                    continue
+                self._channels_srv_setbool_clients_state[channel] = new_state
+                req = SetBool.Request()
+                req.data = new_state
+                client.call_async(req)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for SetBool service")
+
+        for channel, client in self._channels_srv_trigger_clients.items():
+            if channel < len(channels):
+                new_state = channels[channel] > SRV_MSG_THRESHOLD
+                if new_state == self._channels_srv_trigger_clients_state[channel]:
+                    continue
+                self._channels_srv_trigger_clients_state[channel] = new_state
+                if channels[channel] > SRV_MSG_THRESHOLD:
+                    req = Trigger.Request()
+                    client.call_async(req)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Trigger service")
+
+        for channel, client in self._channels_srv_empty_clients.items():
+            if channel < len(channels):
+                new_state = channels[channel] > SRV_MSG_THRESHOLD
+                if new_state == self._channels_srv_empty_clients_state[channel]:
+                    continue
+                self._channels_srv_empty_clients_state[channel] = new_state
+                if channels[channel] > SRV_MSG_THRESHOLD:
+                    req = Empty.Request()
+                    client.call_async(req)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Empty service")
+
+        for channel, publisher in self._channels_msg_float_publishers.items():
+            if channel < len(channels):
+                msg = Float32()
+                msg.data = float(channels[channel])
+                publisher.publish(msg)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Float32 message")
+
+        for channel, publisher in self._channels_msg_bool_publishers.items():
+            if channel < len(channels):
+                msg = Bool()
+                msg.data = channels[channel] > SRV_MSG_THRESHOLD
+                publisher.publish(msg)
+            else:
+                self.get_logger().warn(f"Channel {channel} out of range for Bool message")
+
     def _handle_message(self, msg: CRSFMessage):
         self.get_logger().debug(
             f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}"
@@ -243,6 +401,8 @@ class CRSFInterface(Node):
         if msg.msg_type == PacketType.RC_CHANNELS_PACKED:
             channels = unpack_channels(msg.payload)
             channels = normalize_channel_values(channels)
+
+            self._handle_channel_services_and_messages(channels)
 
             # Handle emergency stop from RC controller
             # Asserted e-stop is retransmitted once per second by republish timer
