@@ -442,11 +442,7 @@ class CRSFInterface(Node):
                 if abs(twist_msg.angular.z) < PAD_DEADZONE:
                     twist_msg.angular.z = 0.0
 
-                self.get_logger().info(
-                    f"Publishing cmd_vel: linear.x={twist_msg.linear.x}, angular.z={twist_msg.angular.z}"
-                )
                 self._publish_twist(twist_msg)
-                self.get_logger().info("cmd_vel published")
 
         elif msg.msg_type == PacketType.LINK_STATISTICS:
             last_lq = self._link_status.lq
@@ -487,11 +483,6 @@ class CRSFInterface(Node):
                 elif last_lq < 30 and self._link_status.lq >= LINK_QUALITY_LOW_THRESHOLD:
                     self.get_logger().info(f"Link quality restored: {self._link_status.lq}%")
 
-            self.get_logger().info(
-                f"Link Status - RSSI1: {self._link_status.rssi_1} dBm, RSSI2: {self._link_status.rssi_2} dBm, LQ: {self._link_status.lq}%, Uplink SNR: {self._link_status.uplink_snr} dB, Used Antenna: {self._link_status.used_antenna}, Mode: {self._link_status.mode}, TX Power: {self._link_status.tx_power} dBm, Downlink RSSI: {self._link_status.downlink_rssi} dBm, Downlink LQ: {self._link_status.downlink_lq}%, Downlink SNR: {self._link_status.downlink_snr} dB"
-            )
-            self.get_logger().info("Link status published")
-
         else:
             self.get_logger().warn(
                 f"Unknown CRSF message (Type: {msg.msg_type.name}, Length: {msg.length})"
@@ -511,12 +502,7 @@ class CRSFInterface(Node):
             self._cmd_vel_publisher.publish(twist)
 
     def _battery_state_callback(self, msg: BatteryState):
-        self.get_logger().debug(
-            f"sending battery telemetry: voltage={msg.voltage}, current={msg.current}, capacity={msg.capacity}, percentage={msg.percentage}"
-        )
-
         data = build_battery_payload(msg.voltage, msg.current, msg.capacity, msg.percentage)
-
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
     def _e_stop_callback(self, msg: Bool):
@@ -525,17 +511,13 @@ class CRSFInterface(Node):
         data = build_e_stop_payload(state)
         self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
 
-        self.get_logger().info(f"sending e-stop telemetry: state={msg.data}")
         self._write_serial(self.e_stop_telemetry)
 
     def _telemetry_timer_callback(self):
         telemetry_messages = [self.battery_telemetry]
 
         for telemetry in telemetry_messages:
-            if telemetry is not None and self._serial:
-                self.get_logger().info(
-                    f"Sending telemetry message: Type={telemetry.msg_type.name}, Length={len(telemetry.payload)}"
-                )
+            if telemetry is not None:
                 self._write_serial(telemetry)
                 telemetry = None
 
