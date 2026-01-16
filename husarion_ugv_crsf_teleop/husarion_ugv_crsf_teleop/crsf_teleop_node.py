@@ -397,9 +397,6 @@ class CRSFInterface(Node):
                 self.get_logger().warn(f"Channel {channel} out of range for Bool message")
 
     def _handle_message(self, msg: CRSFMessage):
-        self.get_logger().debug(
-            f"Received CRSF message: Type={msg.msg_type.name}, Length={len(msg.payload)}"
-        )
         if msg.msg_type == PacketType.RC_CHANNELS_PACKED:
             channels = unpack_channels(msg.payload)
             channels = normalize_channel_values(channels)
