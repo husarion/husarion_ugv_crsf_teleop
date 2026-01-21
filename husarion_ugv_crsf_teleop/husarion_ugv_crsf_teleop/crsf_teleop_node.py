@@ -480,7 +480,7 @@ class CRSFInterface(Node):
                 elif last_lq < 30 and self._link_status.lq >= LINK_QUALITY_LOW_THRESHOLD:
                     self.get_logger().info(f"Link quality restored: {self._link_status.lq}%")
 
-                self._link_status_publisher.publish(self._link_status)
+            self._link_status_publisher.publish(self._link_status)
 
         else:
             self.get_logger().warn(
