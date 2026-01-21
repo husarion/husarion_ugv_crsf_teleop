@@ -148,7 +148,7 @@ class CRSFInterface(Node):
 
             self.battery_subscriber = self.create_subscription(
                 BatteryState,
-                "/lynx/battery/battery_status",
+                "battery/battery_status",
                 self._battery_state_callback,
                 QoSProfile(
                     reliability=QoSReliabilityPolicy.RELIABLE,
@@ -479,6 +479,8 @@ class CRSFInterface(Node):
                     self.get_logger().warn(f"Low link quality: {self._link_status.lq}%")
                 elif last_lq < 30 and self._link_status.lq >= LINK_QUALITY_LOW_THRESHOLD:
                     self.get_logger().info(f"Link quality restored: {self._link_status.lq}%")
+
+                self._link_status_publisher.publish(self._link_status)
 
         else:
             self.get_logger().warn(
