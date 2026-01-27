@@ -168,7 +168,7 @@ class CRSFInterface(Node):
                 ),
             )
 
-            self.telemetry_timer = self.create_timer(2.0, lambda: self._telemetry_timer_callback())
+            self.telemetry_timer = self.create_timer(0.1, lambda: self._telemetry_timer_callback())
 
         self._channels_srv_setbool_clients = {}
         self._channels_srv_setbool_clients_state = {}
