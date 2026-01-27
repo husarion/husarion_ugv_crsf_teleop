@@ -501,7 +501,7 @@ class CRSFInterface(Node):
             self._cmd_vel_publisher.publish(twist)
 
     def _battery_state_callback(self, msg: BatteryState):
-        data = build_battery_payload(msg.voltage, msg.current, msg.capacity, msg.percentage)
+        data = build_battery_payload(msg.voltage, msg.current, msg.percentage)
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
     def _e_stop_callback(self, msg: Bool):
