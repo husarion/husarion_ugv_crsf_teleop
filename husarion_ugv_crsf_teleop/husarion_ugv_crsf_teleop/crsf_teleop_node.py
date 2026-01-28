@@ -168,7 +168,7 @@ class CRSFInterface(Node):
                 ),
             )
 
-            self.telemetry_timer = self.create_timer(0.1, lambda: self._telemetry_timer_callback())
+            self.telemetry_timer = self.create_timer(1.0, lambda: self._telemetry_timer_callback())
 
         self._channels_srv_setbool_clients = {}
         self._channels_srv_setbool_clients_state = {}
@@ -501,6 +501,14 @@ class CRSFInterface(Node):
             self._cmd_vel_publisher.publish(twist)
 
     def _battery_state_callback(self, msg: BatteryState):
+        if (
+            msg.voltage == float("nan")
+            or msg.current == float("nan")
+            or msg.percentage == float("nan")
+        ):
+            self.get_logger().error("Received invalid battery state message")
+            return
+
         data = build_battery_payload(msg.voltage, msg.current, msg.percentage)
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
