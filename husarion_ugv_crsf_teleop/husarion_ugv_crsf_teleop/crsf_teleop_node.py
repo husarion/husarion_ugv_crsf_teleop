@@ -292,7 +292,7 @@ class CRSFInterface(Node):
     def _handle_channel_services_and_messages(self, channels):
         for channel, client in self._channels_srv_setbool_clients.items():
             if channel < len(channels):
-                new_state = channels[channel] > SRV_MSG_THRESHOLD
+                new_state = channels[channel-1] > SRV_MSG_THRESHOLD
                 if new_state == self._channels_srv_setbool_clients_state[channel]:
                     continue
                 self._channels_srv_setbool_clients_state[channel] = new_state
@@ -304,11 +304,11 @@ class CRSFInterface(Node):
 
         for channel, client in self._channels_srv_trigger_clients.items():
             if channel < len(channels):
-                new_state = channels[channel] > SRV_MSG_THRESHOLD
+                new_state = channels[channel-1] > SRV_MSG_THRESHOLD
                 if new_state == self._channels_srv_trigger_clients_state[channel]:
                     continue
                 self._channels_srv_trigger_clients_state[channel] = new_state
-                if channels[channel] > SRV_MSG_THRESHOLD:
+                if channels[channel-1] > SRV_MSG_THRESHOLD:
                     req = Trigger.Request()
                     client.call_async(req)
             else:
@@ -316,11 +316,11 @@ class CRSFInterface(Node):
 
         for channel, client in self._channels_srv_empty_clients.items():
             if channel < len(channels):
-                new_state = channels[channel] > SRV_MSG_THRESHOLD
+                new_state = channels[channel-1] > SRV_MSG_THRESHOLD
                 if new_state == self._channels_srv_empty_clients_state[channel]:
                     continue
                 self._channels_srv_empty_clients_state[channel] = new_state
-                if channels[channel] > SRV_MSG_THRESHOLD:
+                if channels[channel-1] > SRV_MSG_THRESHOLD:
                     req = Empty.Request()
                     client.call_async(req)
             else:
@@ -329,7 +329,7 @@ class CRSFInterface(Node):
         for channel, publisher in self._channels_msg_float_publishers.items():
             if channel < len(channels):
                 msg = Float32()
-                msg.data = float(channels[channel])
+                msg.data = float(channels[channel-1])
                 publisher.publish(msg)
             else:
                 self.get_logger().warn(f"Channel {channel} out of range for Float32 message")
@@ -337,7 +337,7 @@ class CRSFInterface(Node):
         for channel, publisher in self._channels_msg_bool_publishers.items():
             if channel < len(channels):
                 msg = Bool()
-                msg.data = channels[channel] > SRV_MSG_THRESHOLD
+                msg.data = channels[channel-1] > SRV_MSG_THRESHOLD
                 publisher.publish(msg)
             else:
                 self.get_logger().warn(f"Channel {channel} out of range for Bool message")
