@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 from enum import IntEnum, StrEnum
 from time import sleep
 
@@ -501,11 +502,7 @@ class CRSFInterface(Node):
             self._cmd_vel_publisher.publish(twist)
 
     def _battery_state_callback(self, msg: BatteryState):
-        if (
-            msg.voltage == float("nan")
-            or msg.current == float("nan")
-            or msg.percentage == float("nan")
-        ):
+        if math.isnan(msg.voltage) or math.isnan(msg.current) or math.isnan(msg.percentage):
             self.get_logger().error("Received invalid battery state message")
             return
 
