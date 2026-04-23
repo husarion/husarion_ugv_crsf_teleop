@@ -21,7 +21,7 @@ import serial
 from geometry_msgs.msg import Twist, TwistStamped
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
-from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy, qos_profile_default
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool, Float32
 from std_srvs.srv import Empty, SetBool, Trigger
@@ -149,11 +149,7 @@ class CRSFInterface(Node):
                 BatteryState,
                 "battery/battery_status",
                 self._battery_state_callback,
-                QoSProfile(
-                    reliability=QoSReliabilityPolicy.RELIABLE,
-                    durability=QoSDurabilityPolicy.VOLATILE,
-                    depth=1,
-                ),
+                qos_profile_default
             )
 
             self.telemetry_timer = self.create_timer(1.0, lambda: self._telemetry_timer_callback())
