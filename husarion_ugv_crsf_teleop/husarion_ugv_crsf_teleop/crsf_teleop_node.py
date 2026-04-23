@@ -32,7 +32,6 @@ from .crsf.message import (
     CRSFMessage,
     PacketType,
     build_battery_payload,
-    build_e_stop_payload,
     normalize_channel_values,
     unpack_channels,
 )
@@ -145,7 +144,6 @@ class CRSFInterface(Node):
 
         if send_telemetry.value:
             self.battery_telemetry = None
-            self.e_stop_telemetry = None
 
             self.battery_subscriber = self.create_subscription(
                 BatteryState,
@@ -154,17 +152,6 @@ class CRSFInterface(Node):
                 QoSProfile(
                     reliability=QoSReliabilityPolicy.RELIABLE,
                     durability=QoSDurabilityPolicy.VOLATILE,
-                    depth=1,
-                ),
-            )
-
-            self.e_stop_subscriber = self.create_subscription(
-                Bool,
-                "hardware/e_stop",
-                self._e_stop_callback,
-                QoSProfile(
-                    reliability=QoSReliabilityPolicy.RELIABLE,
-                    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                     depth=1,
                 ),
             )
@@ -508,14 +495,6 @@ class CRSFInterface(Node):
 
         data = build_battery_payload(msg.voltage, msg.current, msg.percentage)
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
-
-    def _e_stop_callback(self, msg: Bool):
-        state = FlightMode.STOPPED if msg.data else FlightMode.READY
-
-        data = build_e_stop_payload(state)
-        self.e_stop_telemetry = CRSFMessage(PacketType.FLIGHT_MODE, data)
-
-        self._write_serial(self.e_stop_telemetry)
 
     def _telemetry_timer_callback(self):
         telemetry_messages = [self.battery_telemetry]

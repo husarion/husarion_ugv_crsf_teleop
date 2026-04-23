@@ -152,12 +152,3 @@ def build_battery_payload(voltage, current, percent):
 
     data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
     return data
-
-
-def build_e_stop_payload(e_stop_state: str):
-    data = bytearray()
-    type_byte = PacketType.FLIGHT_MODE.value
-
-    p = bytes(e_stop_state.encode("utf-8"))
-    data = bytes([type_byte]) + p
-    return data
