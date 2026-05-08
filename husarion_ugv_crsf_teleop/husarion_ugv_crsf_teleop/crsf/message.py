@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import struct
 from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import List
@@ -151,4 +152,16 @@ def build_battery_payload(voltage, current, percent):
     type_byte = PacketType.BATTERY_SENSOR.value
 
     data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
+    return data
+
+
+def build_angle_trajectory_payload(angle: float, trajectory_length: float) -> bytes:
+    """
+    Build a payload containing an angle and trajectory length, both as 4-byte floats.
+    """
+    # Choose a custom type ID for this message, e.g., 0x81 (must not conflict with existing ones)
+    type_byte = 0x81
+    angle_bytes = struct.pack("<f", angle)
+    length_bytes = struct.pack("<f", trajectory_length)
+    data = bytes([type_byte]) + angle_bytes + length_bytes
     return data

@@ -18,7 +18,9 @@ from time import sleep
 
 import rclpy
 import serial
+import tf_transformations
 from geometry_msgs.msg import Twist, TwistStamped
+from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import (
@@ -36,6 +38,7 @@ from husarion_ugv_crsf_interfaces.msg import LinkStatus
 from .crsf.message import (
     CRSFMessage,
     PacketType,
+    build_angle_trajectory_payload,
     build_battery_payload,
     normalize_channel_values,
     unpack_channels,
@@ -154,6 +157,19 @@ class CRSFInterface(Node):
                 BatteryState,
                 "battery/battery_status",
                 self._battery_state_callback,
+                qos_profile_default,
+            )
+
+            # Odometry trajectory and heading
+            self.trajectory_angle_telemetry = None
+            self._last_odom_position = None
+            self._trajectory_length = 0.0
+            self._heading_yaw = 0.0
+
+            self._odom_sub = self.create_subscription(
+                Odometry,
+                "panther/odometry/wheels",
+                self._odom_callback,
                 qos_profile_default,
             )
 
@@ -497,8 +513,27 @@ class CRSFInterface(Node):
         data = build_battery_payload(msg.voltage, msg.current, msg.percentage)
         self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
 
+    def _odom_callback(self, msg):
+        # Calculate trajectory length
+        pos = msg.pose.pose.position
+        current_position = (pos.x, pos.y)
+        if self._last_odom_position is not None:
+            dx = current_position[0] - self._last_odom_position[0]
+            dy = current_position[1] - self._last_odom_position[1]
+            self._trajectory_length += math.hypot(dx, dy)
+        self._last_odom_position = current_position
+
+        # Calculate heading (yaw)
+        q = msg.pose.pose.orientation
+        quaternion = [q.x, q.y, q.z, q.w]
+        _, _, yaw = tf_transformations.euler_from_quaternion(quaternion)
+        self._heading_yaw = yaw
+        self.trajectory_angle_telemetry = build_angle_trajectory_payload(
+            yaw, self._trajectory_length
+        )
+
     def _telemetry_timer_callback(self):
-        telemetry_messages = [self.battery_telemetry]
+        telemetry_messages = [self.battery_telemetry, self.trajectory_angle_telemetry]
 
         for telemetry in telemetry_messages:
             if telemetry is not None:
