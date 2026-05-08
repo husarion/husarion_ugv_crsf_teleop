@@ -251,7 +251,7 @@ class CRSFInterface(Node):
         if e_stop_republish.value:
             self.e_stop_republisher = self.create_timer(1, self._update_e_stop)
 
-        self.get_logger().info("CRSF Interface node initialized")
+        self.get_logger().info("CRSF Interface node initialized new!!!")
 
     def _declare_node_parameters(self):
         self.declare_parameter(
