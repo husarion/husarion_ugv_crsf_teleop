@@ -152,10 +152,34 @@ RC controller has some additional buttons that can be used for different functio
 - `cmd_vel` [*geometry_msgs/Twist* or *geometry_msgs/TwistStamped*]: Command velocity, the type of the message depends on `cmd_vel_stamped` parameter.
 - `link_status` [*husarion_ugv_crsf_interfaces/LinkStatus*]: CRSF link status.
 
+### Subscribers
+
+- `battery/battery_status` [*sensor_msgs/BatteryState*]: Subscribes to battery status updates. Used for telemetry if `send_telemetry` is enabled.
+- `hardware/e_stop` [*std_msgs/Bool*]: Subscribes to emergency stop status. Used for telemetry if `send_telemetry` is enabled.
+
 ### Service clients
 
 - `hardware/e_stop_trigger` [*std_srvs/Trigger]: Trigger robot emergency stop.
 - `hardware/e_stop_release` [*std_srvs/Trigger]: Release robot emergency stop.
+
+#### Optional service clients
+
+The node can optionally create service clients for additional RC channels, depending on the configuration:
+
+- `crsf_channel<channel>/set_bool` [*std_srvs/SetBool*]: SetBool service for the specified RC channel.
+- `crsf_channel<channel>/trigger` [*std_srvs/Trigger*]: Trigger service for the specified RC channel.
+- `crsf_channel<channel>/empty` [*std_srvs/Empty*]: Empty service for the specified RC channel.
+
+These service clients are only created if the corresponding `channels_srv_setbool`, `channels_srv_trigger`, or `channels_srv_empty` parameters are set with channel numbers.
+
+#### Optional publishers
+
+The node can also create publishers for additional RC channels:
+
+- `crsf_channel<channel>/float` [*std_msgs/Float32*]: Publishes Float32 messages for the specified RC channel.
+- `crsf_channel<channel>/bool` [*std_msgs/Bool*]: Publishes Bool messages for the specified RC channel.
+
+These publishers are only created if the corresponding `channels_msg_float` or `channels_msg_bool` parameters are set.
 
 ### Parameters
 
@@ -166,3 +190,9 @@ RC controller has some additional buttons that can be used for different functio
 - `enable_cmd_vel_silence_switch` [*bool*, default: **False**]: Enable cmd_vel silence switch allowing other nodes to take control.
 - `linear_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum linear speed for cmd_vel in value range from 0.0 to 10.0.
 - `angular_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum angular speed for cmd_vel in value range from 0.0 to 10.0.
+- `send_telemetry` [*bool*, default: **False**]: Enable sending telemetry to the RC transmitter.
+- `channels_srv_setbool` [*list[int]*, default: **[12]**]: RC channels mapped to SetBool services.
+- `channels_srv_trigger` [*list[int]*, default: **[12]**]: RC channels mapped to Trigger services.
+- `channels_srv_empty` [*list[int]*, default: **[12]**]: RC channels mapped to Empty services.
+- `channels_msg_float` [*list[int]*, default: **[12]**]: RC channels mapped to Float32 messages.
+- `channels_msg_bool` [*list[int]*, default: **[12]**]: RC channels mapped to Bool messages.

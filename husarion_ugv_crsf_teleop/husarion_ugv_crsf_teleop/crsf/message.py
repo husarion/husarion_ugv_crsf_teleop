@@ -29,6 +29,7 @@ class PacketType(IntEnum):
     BATTERY_SENSOR = 0x08
     BARO_ALTITUDE = 0x09
     HEARTBEAT = 0x0B
+    RPM = 0x0C
     VIDEO_TRANSMITTER = 0x0F
     LINK_STATISTICS = 0x14
     RC_CHANNELS_PACKED = 0x16
@@ -86,28 +87,31 @@ class CRSFMessage:
 
         return crc
 
-    def encode(self) -> bytearray:
-        data = bytearray()
+    def encode_erc(self, assign_to_self: bool = True) -> int:
+        crc = 0
+        for byte in self.payload:
+            crc = self._crc8_dvb_s2(crc, byte)
 
+        if assign_to_self:
+            self.crc = crc
+
+        return crc
+
+    def encode(self) -> bytearray:
         if self.msg_type not in PacketType:
             raise ValueError("Invalid message type")
 
-        data.append(CRSF_SYNC)
-        data.append(len(self.payload))
-        data.append(self.msg_type)
+        length = len(self.payload) + 1  # type + payload + crc
+        frame = bytes([CRSF_SYNC, length]) + self.payload
 
-        if self.is_extended():
-            data.append(self.destination)
-            data.append(self.source)
+        crc = self.encode_erc(frame[2:])
+        frame = frame + bytes([crc])
 
-        data.extend(self.payload)
-        data.append(self.calculate_crc())
-
-        return data
+        return frame
 
     def _crc8_dvb_s2(self, crc, a) -> int:
         crc = crc ^ a
-        for ii in range(8):
+        for _ in range(8):
             if crc & 0x80:
                 crc = (crc << 1) ^ 0xD5
             else:
@@ -135,3 +139,16 @@ def normalize_channel_values(channels: List[int]) -> List[float]:
         raise ValueError("Input data must contain 16 channels")
 
     return [(channel - 992) / 820.0 for channel in channels]
+
+
+def build_battery_payload(voltage, current, percent):
+    vbat_raw = int(voltage * 10)
+    curr_raw = int(current * 10)
+    vbat_bytes = vbat_raw.to_bytes(2, byteorder="big", signed=True)
+    curr_bytes = curr_raw.to_bytes(2, byteorder="big", signed=True)
+    pct = bytes([int(percent * 100)])
+    mah_bytes = bytes([0x00, 0x00, 0x00])  # placeholder mAh bytes
+    type_byte = PacketType.BATTERY_SENSOR.value
+
+    data = bytes([type_byte]) + vbat_bytes + curr_bytes + mah_bytes + pct
+    return data

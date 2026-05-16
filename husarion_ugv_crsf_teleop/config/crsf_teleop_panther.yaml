@@ -9,6 +9,8 @@
       enable_cmd_vel_silence_switch: true
       linear_speed_presets: [0.4, 1.2, 2.0]
       angular_speed_presets: [0.39, 0.78, 1.88]
+      send_telemetry: True
+      use_sim_time: False
       channels_srv_setbool: []
       channels_srv_trigger: []
       channels_srv_empty: []

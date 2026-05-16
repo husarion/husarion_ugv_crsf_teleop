@@ -12,14 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
+import math
+from enum import IntEnum, StrEnum
+from time import sleep
 
 import rclpy
 import serial
 from geometry_msgs.msg import Twist, TwistStamped
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
 from rclpy.node import Node
-from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+from rclpy.qos import (
+    QoSDurabilityPolicy,
+    QoSProfile,
+    QoSReliabilityPolicy,
+    qos_profile_default,
+)
+from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool, Float32
 from std_srvs.srv import Empty, SetBool, Trigger
 
@@ -28,6 +36,7 @@ from husarion_ugv_crsf_interfaces.msg import LinkStatus
 from .crsf.message import (
     CRSFMessage,
     PacketType,
+    build_battery_payload,
     normalize_channel_values,
     unpack_channels,
 )
@@ -53,6 +62,13 @@ class Switch(IntEnum):
     SG = 10
 
 
+class FlightMode(StrEnum):
+    READY = "READY\0"
+    STOPPED = "STOPPED\0"
+    TELE = "TELE\0"
+    AUTO = "AUTO\0"
+
+
 class CRSFInterface(Node):
     def __init__(self):
         super().__init__("crsf_interface")
@@ -68,6 +84,7 @@ class CRSFInterface(Node):
             self._enable_cmd_vel_silence_switch,
             self._linear_speed_presets,
             self._angular_speed_presets,
+            send_telemetry,
         ] = self.get_parameters(
             [
                 "port",
@@ -78,6 +95,7 @@ class CRSFInterface(Node):
                 "enable_cmd_vel_silence_switch",
                 "linear_speed_presets",
                 "angular_speed_presets",
+                "send_telemetry",
             ]
         )
 
@@ -128,6 +146,18 @@ class CRSFInterface(Node):
             Trigger,
             "hardware/e_stop_reset",
         )
+
+        if send_telemetry.value:
+            self.battery_telemetry = None
+
+            self.battery_subscriber = self.create_subscription(
+                BatteryState,
+                "battery/battery_status",
+                self._battery_state_callback,
+                qos_profile_default,
+            )
+
+            self.telemetry_timer = self.create_timer(1.0, lambda: self._telemetry_timer_callback())
 
         self._channels_srv_setbool_clients = {}
         self._channels_srv_setbool_clients_state = {}
@@ -190,8 +220,10 @@ class CRSFInterface(Node):
         while self._serial is None:
             try:
                 self._serial = serial.Serial(port.value, baud.value, timeout=2)
+                self.get_logger().info(f"Opened serial port {port.value} at {baud.value} baud")
             except serial.SerialException as e:
                 self.get_logger().error(f"Failed to open serial port: {e}")
+                sleep(2)
                 rclpy.spin_once(self, timeout_sec=2)
 
         self._parser = CRSFParser()
@@ -202,6 +234,8 @@ class CRSFInterface(Node):
         self._rc_estop_state = True
         if e_stop_republish.value:
             self.e_stop_republisher = self.create_timer(1, self._update_e_stop)
+
+        self.get_logger().info("CRSF Interface node initialized")
 
     def _declare_node_parameters(self):
         self.declare_parameter(
@@ -250,6 +284,11 @@ class CRSFInterface(Node):
         )
 
         self.declare_parameter(
+            "send_telemetry",
+            False,
+            ParameterDescriptor(description="Enable sending telemetry to the RC transmitter"),
+        )
+        self.declare_parameter(
             "channels_srv_setbool",
             [
                 12
@@ -286,8 +325,12 @@ class CRSFInterface(Node):
         )
 
     def _serial_parser_timer_cb(self):
-        if self._serial.in_waiting > 0:
-            self._parser.parse(self._serial.read(self._serial.in_waiting))
+        try:
+            if self._serial and self._serial.in_waiting > 0:
+                self._parser.parse(self._serial.read(self._serial.in_waiting))
+        except OSError as e:
+            self.get_logger().error(f"Serial port error: {e}")
+            raise RuntimeError("Serial port error") from e
 
     def _handle_channel_services_and_messages(self, channels):
         for channel, client in self._channels_srv_setbool_clients.items():
@@ -445,6 +488,30 @@ class CRSFInterface(Node):
             self._cmd_vel_publisher.publish(twist_stamped_msg)
         else:
             self._cmd_vel_publisher.publish(twist)
+
+    def _battery_state_callback(self, msg: BatteryState):
+        if math.isnan(msg.voltage) or math.isnan(msg.current) or math.isnan(msg.percentage):
+            self.get_logger().error("Received invalid battery state message")
+            return
+
+        data = build_battery_payload(msg.voltage, msg.current, msg.percentage)
+        self.battery_telemetry = CRSFMessage(PacketType.BATTERY_SENSOR, data)
+
+    def _telemetry_timer_callback(self):
+        telemetry_messages = [self.battery_telemetry]
+
+        for telemetry in telemetry_messages:
+            if telemetry is not None:
+                self._write_serial(telemetry)
+                telemetry = None
+
+    def _write_serial(self, msg: CRSFMessage):
+        try:
+            if self._serial:
+                self._serial.write(msg.encode())
+                self._serial.flush()
+        except serial.SerialException as e:
+            self.get_logger().error(f"Serial write error: {e}")
 
 
 def main(args=None):
