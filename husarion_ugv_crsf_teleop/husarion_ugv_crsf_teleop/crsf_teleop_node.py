@@ -203,6 +203,8 @@ class CRSFInterface(Node):
         if e_stop_republish.value:
             self.e_stop_republisher = self.create_timer(1, self._update_e_stop)
 
+        self._last_channels = []
+
     def _declare_node_parameters(self):
         self.declare_parameter(
             "port", "/dev/ttyUSB0", ParameterDescriptor(description="CRSF receiver serial port")
@@ -348,6 +350,12 @@ class CRSFInterface(Node):
             channels = normalize_channel_values(channels)
 
             self._handle_channel_services_and_messages(channels)
+
+            channels_for_logging = [0.0 if round(x, 2) == 0 else round(x, 2) for x in channels[4:5]]
+
+            if (self._last_channels != channels_for_logging):
+                self.get_logger().info(f"{[f'{x:.2f}' for x in channels_for_logging]}")
+                self._last_channels = channels_for_logging
 
             # Handle emergency stop from RC controller
             # Asserted e-stop is retransmitted once per second by republish timer
