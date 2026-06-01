@@ -33,7 +33,8 @@ from .crsf.message import (
 )
 from .crsf.parser import CRSFParser
 
-REQUESTED_E_STOP_THRESHOLD = 0.5
+REQUESTED_E_STOP_THRESHOLD_UPPER = 0.97
+REQUESTED_E_STOP_THRESHOLD_LOWER = -REQUESTED_E_STOP_THRESHOLD_UPPER
 SEND_CMD_VEL_THRESHOLD = -0.5
 
 SRV_MSG_THRESHOLD = 0.5
@@ -353,14 +354,18 @@ class CRSFInterface(Node):
             # Asserted e-stop is retransmitted once per second by republish timer
             # if enabled by the 'e_stop_republish' parameter
             # Deasserted e-stop is transmitted only once
-            requested_e_stop = channels[Switch.SF] < REQUESTED_E_STOP_THRESHOLD
-            if requested_e_stop != self._rc_estop_state:
-                self._rc_estop_state = requested_e_stop
+            if(
+                channels[Switch.SF] > REQUESTED_E_STOP_THRESHOLD_UPPER
+                or channels[Switch.SF] < REQUESTED_E_STOP_THRESHOLD_LOWER
+            ):
+                requested_e_stop = channels[Switch.SF] < REQUESTED_E_STOP_THRESHOLD_LOWER
+                if requested_e_stop != self._rc_estop_state:
+                    self._rc_estop_state = requested_e_stop
 
-                if self._rc_estop_state:
-                    self._e_stop_trigger.call_async(Trigger.Request())
-                else:
-                    self._e_stop_reset.call_async(Trigger.Request())
+                    if self._rc_estop_state:
+                        self._e_stop_trigger.call_async(Trigger.Request())
+                    else:
+                        self._e_stop_reset.call_async(Trigger.Request())
 
             # Disable sending cmd_vel if override switch is asserted
             if self._enable_cmd_vel_silence_switch.value:
