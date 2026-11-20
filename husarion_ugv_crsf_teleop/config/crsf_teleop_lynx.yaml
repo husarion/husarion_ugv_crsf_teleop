@@ -6,9 +6,12 @@
       cmd_vel_stamped: true
       cmd_vel_topic: cmd_vel
       e_stop_republish: false
+      e_stop_channel: 5
       enable_cmd_vel_silence_switch: true
+      cmd_vel_silence_channel: 7
       linear_speed_presets: [0.5, 0.9, 1.5]
       angular_speed_presets: [0.45, 0.9, 2.0]
+      speed_preset_channel: 11
       channels_srv_setbool: []
       channels_srv_trigger: []
       channels_srv_empty: []

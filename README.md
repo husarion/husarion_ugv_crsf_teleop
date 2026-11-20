@@ -138,6 +138,8 @@ RC controller has some additional buttons that can be used for different functio
 - SF switch - emergency stop
 - SA switch (down position) - silence `cmd_vel` messages, allows other nodes to control the robot while enabling e_stop functionality
 
+The channels used by the SF, SA and SG switches can be remapped with the `e_stop_channel`, `cmd_vel_silence_channel` and `speed_preset_channel` parameters.
+
 > [!WARNING] SF switch
 > By default the SA switch has no functionality assigned. You can enable silence mode by adding the following line to the custom `params.yaml` file:
 >
@@ -163,6 +165,9 @@ RC controller has some additional buttons that can be used for different functio
 - `baud` [*int*, default: **576000**]: CRSF receiver baud rate".
 - `cmd_vel_stamped` [*bool*, default: **False**]: Publish cmd_vel as TwistStamped instead of Twist.
 - `e_stop_republish` [*bool*, default: **False**]:  Rebroadcast asserted e-stop signal once per second
+- `e_stop_channel` [*int*, default: **5**]: RC channel (1-based, 1-16) of the emergency stop switch (SF on TX16S).
 - `enable_cmd_vel_silence_switch` [*bool*, default: **False**]: Enable cmd_vel silence switch allowing other nodes to take control.
+- `cmd_vel_silence_channel` [*int*, default: **7**]: RC channel (1-based, 1-16) of the cmd_vel silence switch (SA on TX16S).
 - `linear_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum linear speed for cmd_vel in value range from 0.0 to 10.0.
 - `angular_speed_presets` [*list[float]*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum angular speed for cmd_vel in value range from 0.0 to 10.0.
+- `speed_preset_channel` [*int*, default: **11**]: RC channel (1-based, 1-16) of the tri-state switch selecting the speed preset (SG on TX16S).

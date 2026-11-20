@@ -17,7 +17,7 @@ from enum import IntEnum
 import rclpy
 import serial
 from geometry_msgs.msg import Twist, TwistStamped
-from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor
+from rcl_interfaces.msg import FloatingPointRange, IntegerRange, ParameterDescriptor
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_msgs.msg import Bool, Float32
@@ -43,14 +43,13 @@ LINK_QUALITY_LOW_THRESHOLD = 30
 
 PAD_DEADZONE = 0.02
 
+CRSF_MAX_CHANNELS = 16
 
-# RC remote to channel id mapping
+
+# RC remote to channel id mapping (0-based)
 class Switch(IntEnum):
     RIGHT_HORIZONTAL = 1
     LEFT_VERTICAL = 3
-    SF = 4
-    SA = 6
-    SG = 10
 
 
 class CRSFInterface(Node):
@@ -68,6 +67,9 @@ class CRSFInterface(Node):
             self._enable_cmd_vel_silence_switch,
             self._linear_speed_presets,
             self._angular_speed_presets,
+            e_stop_channel,
+            cmd_vel_silence_channel,
+            speed_preset_channel,
         ] = self.get_parameters(
             [
                 "port",
@@ -78,8 +80,16 @@ class CRSFInterface(Node):
                 "enable_cmd_vel_silence_switch",
                 "linear_speed_presets",
                 "angular_speed_presets",
+                "e_stop_channel",
+                "cmd_vel_silence_channel",
+                "speed_preset_channel",
             ]
         )
+
+        # Parameters use 1-based channel numbers, convert to 0-based list indices
+        self._e_stop_channel_idx = e_stop_channel.value - 1
+        self._cmd_vel_silence_channel_idx = cmd_vel_silence_channel.value - 1
+        self._speed_preset_channel_idx = speed_preset_channel.value - 1
 
         PARAM_TO_ATTR = {
             "channels_srv_setbool": "_channels_srv_setbool",
@@ -248,6 +258,30 @@ class CRSFInterface(Node):
                 floating_point_range=[FloatingPointRange(from_value=0.0, to_value=10.0)],
             ),
         )
+        self.declare_parameter(
+            "e_stop_channel",
+            5,
+            ParameterDescriptor(
+                description="RC channel (1-based) of the emergency stop switch (SF on TX16S)",
+                integer_range=[IntegerRange(from_value=1, to_value=CRSF_MAX_CHANNELS, step=1)],
+            ),
+        )
+        self.declare_parameter(
+            "cmd_vel_silence_channel",
+            7,
+            ParameterDescriptor(
+                description="RC channel (1-based) of the cmd_vel silence switch (SA on TX16S)",
+                integer_range=[IntegerRange(from_value=1, to_value=CRSF_MAX_CHANNELS, step=1)],
+            ),
+        )
+        self.declare_parameter(
+            "speed_preset_channel",
+            11,
+            ParameterDescriptor(
+                description="RC channel (1-based) of the tri-state speed preset switch (SG on TX16S)",
+                integer_range=[IntegerRange(from_value=1, to_value=CRSF_MAX_CHANNELS, step=1)],
+            ),
+        )
 
         self.declare_parameter(
             "channels_srv_setbool",
@@ -353,7 +387,7 @@ class CRSFInterface(Node):
             # Asserted e-stop is retransmitted once per second by republish timer
             # if enabled by the 'e_stop_republish' parameter
             # Deasserted e-stop is transmitted only once
-            requested_e_stop = channels[Switch.SF] < REQUESTED_E_STOP_THRESHOLD
+            requested_e_stop = channels[self._e_stop_channel_idx] < REQUESTED_E_STOP_THRESHOLD
             if requested_e_stop != self._rc_estop_state:
                 self._rc_estop_state = requested_e_stop
 
@@ -364,17 +398,14 @@ class CRSFInterface(Node):
 
             # Disable sending cmd_vel if override switch is asserted
             if self._enable_cmd_vel_silence_switch.value:
-                send_cmd_vel = channels[Switch.SA] < SEND_CMD_VEL_THRESHOLD
+                send_cmd_vel = channels[self._cmd_vel_silence_channel_idx] < SEND_CMD_VEL_THRESHOLD
             else:
                 send_cmd_vel = True
 
             if send_cmd_vel:
-                linear_speed_modifier = self._linear_speed_presets.value[
-                    round(channels[Switch.SG]) + 1
-                ]
-                angular_speed_modifier = self._angular_speed_presets.value[
-                    round(channels[Switch.SG]) + 1
-                ]
+                speed_preset = round(channels[self._speed_preset_channel_idx]) + 1
+                linear_speed_modifier = self._linear_speed_presets.value[speed_preset]
+                angular_speed_modifier = self._angular_speed_presets.value[speed_preset]
 
                 twist_msg = Twist()
                 twist_msg.linear.x = channels[Switch.RIGHT_HORIZONTAL] * linear_speed_modifier

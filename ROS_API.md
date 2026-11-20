@@ -32,9 +32,9 @@ The following channels are used for controlling the robot via the TX16S remote c
 
 - Channel 2 - Right gimbal up/down - forward/backward velocity
 - Channel 4 - Left gimbal left/right - turning (angular) velocity
-- Channel 5 - SF switch - emergency stop
-- Channel 7 - SA switch (down position) - silence `cmd_vel` messages, allows other nodes to control the robot while enabling e_stop functionality
-- Channel 11 - SG switch - tristate switch, selects robot speed
+- Channel 5 - SF switch - emergency stop (configurable via `e_stop_channel`)
+- Channel 7 - SA switch (down position) - silence `cmd_vel` messages, allows other nodes to control the robot while enabling e_stop functionality (configurable via `cmd_vel_silence_channel`)
+- Channel 11 - SG switch - tristate switch, selects robot speed (configurable via `speed_preset_channel`)
 
 ##### Publishes
 
@@ -51,6 +51,9 @@ The following channels are used for controlling the robot via the TX16S remote c
 - `serial_port` [*string*, default: **/dev/ttyUSB0**]: Serial port to which the CRSF receiver is connected.
 - `baudrate` [*int*, default: **576000**]: Baudrate of the serial port.
 - `e_stop_republish` [*bool*, default: **False**]: Rebroadcasts asserted emergency stop signal once per second. Will override other emergency stop sources.
+- `e_stop_channel` [*int*, default: **5**]: RC channel (1-based, 1-16) of the emergency stop switch.
 - `enable_cmd_vel_silence_switch`[*bool*, default: **False**]: Enables remote to disable publishing `cmd_vel` messages on demand. Can be used as a remote emergency stop when using other nodes to control the robot.
+- `cmd_vel_silence_channel` [*int*, default: **7**]: RC channel (1-based, 1-16) of the `cmd_vel` silence switch.
 - `linear_speed_presets` [*double_array*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum linear speed for `cmd_vel` topic.
 - `angular_speed_presets` [*double_array*, default: **[0.5, 1.0, 2.0]**]: Selectable robot maximum angular speed for the `cmd_vel` topic.
+- `speed_preset_channel` [*int*, default: **11**]: RC channel (1-based, 1-16) of the tri-state switch selecting the speed preset.
